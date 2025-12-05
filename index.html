@@ -260,9 +260,8 @@
         const btnBrake = document.getElementById('btnBrake');
 
         // --- Steering Logic Variables ---
-        let isDraggingWheel = false;
-        let wheelInitAngle = 0;
-        let wheelCurrentRotation = 0;
+        let tiltEnabled = false;
+        let currentTilt = 0;
         let hasTriggeredTurn = false; // Prevent multiple turns in one drag without resetting
 
         // --- 3D Scene Variables ---
@@ -1163,251 +1162,224 @@
                     endAction();
                     btn.classList.remove('active');
                 });
-            };
+                attachBtnEvents(btnGas, () => isAccelerating = true, () => isAccelerating = false);
+                attachBtnEvents(btnBrake, () => isBraking = true, () => isBraking = false);
 
-            attachBtnEvents(btnGas, () => isAccelerating = true, () => isAccelerating = false);
-            attachBtnEvents(btnBrake, () => isBraking = true, () => isBraking = false);
+                // Steering Wheel Logic - Tilt (Gyroscope)
+                if (steeringContainer && steeringWheel) {
 
-            // Steering Wheel Logic - Drag to Steer
-            if (steeringContainer && steeringWheel) {
+                    // Add a text hint to the wheel
+                    const hint = document.createElement('div');
+                    hint.innerText = "TAP TO ENABLE TILT";
+                    hint.style.position = 'absolute';
+                    hint.style.width = '100%';
+                    hint.style.textAlign = 'center';
+                    hint.style.color = 'white';
+                    hint.style.fontWeight = 'bold';
+                    hint.style.fontSize = '12px';
+                    hint.style.textShadow = '0 1px 2px black';
+                    hint.style.pointerEvents = 'none';
+                    steeringContainer.appendChild(hint);
 
-                const getAngle = (clientX, clientY) => {
-                    const rect = steeringContainer.getBoundingClientRect();
-                    const centerX = rect.left + rect.width / 2;
-                    const centerY = rect.top + rect.height / 2;
-                    return Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
-                };
-
-                const resetWheel = () => {
-                    isDraggingWheel = false;
-                    wheelCurrentRotation = 0;
-                    hasTriggeredTurn = false;
-
-                    // Re-enable transition for smooth return
-                    steeringWheel.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                    steeringWheel.style.transform = `rotate(0deg)`;
-                };
-
-                steeringContainer.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    if (e.touches.length > 0) {
-                        isDraggingWheel = true;
-                        // Disable transition for instant tracking
-                        steeringWheel.style.transition = 'none';
-
-                        const touch = e.touches[0];
-                        // Calculate initial offset angle so the wheel doesn't jump to finger position
-                        const angle = getAngle(touch.clientX, touch.clientY);
-                        wheelInitAngle = angle - wheelCurrentRotation;
-                    }
-                }, { passive: false });
-
-                steeringContainer.addEventListener('touchmove', (e) => {
-                    if (!isDraggingWheel) return;
-                    e.preventDefault();
-
-                    const touch = e.touches[0];
-                    const angle = getAngle(touch.clientX, touch.clientY);
-
-                    // Update rotation
-                    // We want the wheel to follow the finger relative to where we started
-                    // But for a simple steering wheel, usually we just map the angle directly 
-                    // or mapped from the "down" position (90 degrees). 
-                    // Let's try simple relative tracking first.
-
-                    let newRotation = angle - wheelInitAngle;
-
-                    // Normalize to keep it sane (optional, but good if wrapping around)
-                    // Clamp rotation to resemble real max lock (e.g. -90 to 90)
-                    newRotation = Math.max(-100, Math.min(100, newRotation));
-
-                    wheelCurrentRotation = newRotation;
-                    steeringWheel.style.transform = `rotate(${wheelCurrentRotation}deg)`;
-
-                    // Threshold Logic
-                    const TURN_THRESHOLD = 30;
-                    const RESET_THRESHOLD = 10;
-
-                    if (!hasTriggeredTurn) {
-                        if (wheelCurrentRotation < -TURN_THRESHOLD) {
-                            movePlayer(-1);
-                            triggerHaptic('heavy');
-                            hasTriggeredTurn = true;
-                        } else if (wheelCurrentRotation > TURN_THRESHOLD) {
-                            movePlayer(1);
-                            triggerHaptic('heavy');
-                            hasTriggeredTurn = true;
+                    const requestTiltPermission = async () => {
+                        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                            try {
+                                const response = await DeviceOrientationEvent.requestPermission();
+                                if (response === 'granted') {
+                                    enableTilt();
+                                } else {
+                                    alert('Tilt permission denied.');
+                                }
+                            } catch (e) {
+                                console.error(e);
+                            }
+                        } else {
+                            // Non-iOS 13+ devices
+                            enableTilt();
                         }
-                    } else {
-                        // Reset trigger if user brings wheel back to center
-                        if (Math.abs(wheelCurrentRotation) < RESET_THRESHOLD) {
-                            hasTriggeredTurn = false;
-                            triggerHaptic('light'); // Subtle click on center
+                    };
+
+                    const enableTilt = () => {
+                        tiltEnabled = true;
+                        hint.style.display = 'none'; // Hide hint
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        triggerHaptic('success');
+                    };
+
+                    const handleOrientation = (e) => {
+                        if (!tiltEnabled) return;
+
+                        // Gamma is usually left-to-right tilt in landscape (approx -90 to 90)
+                        // Beta might be used in portrait, but game is landscape-ish?
+                        // Let's assume landscape or standard holding position.
+                        // We check Gamma first.
+
+                        let angle = e.gamma;
+
+                        // Simple constraints and deadzone
+                        // Deadzone: +/- 5 degrees
+                        // Max Lock: +/- 45 degrees
+
+                        if (!angle) return; // Sometimes null on desktop
+
+                        // Smooth visual rotation
+                        currentTilt = currentTilt * 0.7 + angle * 0.3; // Simple lerp
+
+                        // Visual Limit
+                        const displayAngle = Math.max(-90, Math.min(90, currentTilt));
+                        steeringWheel.style.transform = `rotate(${displayAngle}deg)`;
+
+
+                        // Logic Threshold
+                        const TURN_THRESHOLD = 15;
+                        const RESET_THRESHOLD = 5;
+
+                        if (!hasTriggeredTurn) {
+                            if (currentTilt < -TURN_THRESHOLD) {
+                                movePlayer(-1);
+                                triggerHaptic('medium');
+                                hasTriggeredTurn = true;
+                            } else if (currentTilt > TURN_THRESHOLD) {
+                                movePlayer(1);
+                                triggerHaptic('medium');
+                                hasTriggeredTurn = true;
+                            }
+                        } else {
+                            // Reset trigger if user brings wheel back to center
+                            if (Math.abs(currentTilt) < RESET_THRESHOLD) {
+                                hasTriggeredTurn = false;
+                            }
                         }
-                    }
+                    };
 
-                }, { passive: false });
+                    // Remove old drag listeners if any, add simple tap handler for permission
+                    steeringContainer.addEventListener('click', requestTiltPermission);
+                    steeringContainer.addEventListener('touchstart', (e) => {
+                        // Just consume the event so it doesn't pass through
+                        // but click handles the permission logic
+                    }, { passive: false });
+                }
 
-                steeringContainer.addEventListener('touchend', resetWheel);
-                steeringContainer.addEventListener('touchcancel', resetWheel);
+                // Touch Controls (Swiping) - Keep as fallback
+                window.addEventListener('touchstart', handleTouchStart, { passive: false });
+                window.addEventListener('touchmove', handleTouchMove, { passive: false });
+                window.addEventListener('touchend', handleTouchEnd);
 
-                // Mouse fallback
-                steeringContainer.addEventListener('mousedown', (e) => {
-                    isDraggingWheel = true;
-                    steeringWheel.style.transition = 'none';
-                    const angle = getAngle(e.clientX, e.clientY);
-                    wheelInitAngle = angle - wheelCurrentRotation;
-                });
+                // Restart Button
+                restartButton.addEventListener('click', resetGame);
 
-                window.addEventListener('mousemove', (e) => {
-                    if (!isDraggingWheel) return;
-                    const angle = getAngle(e.clientX, e.clientY);
-                    let newRotation = angle - wheelInitAngle;
-                    newRotation = Math.max(-100, Math.min(100, newRotation));
-
-                    wheelCurrentRotation = newRotation;
-                    steeringWheel.style.transform = `rotate(${wheelCurrentRotation}deg)`;
-
-                    const TURN_THRESHOLD = 30;
-                    const RESET_THRESHOLD = 10;
-
-                    if (!hasTriggeredTurn) {
-                        if (wheelCurrentRotation < -TURN_THRESHOLD) {
-                            movePlayer(-1);
-                            hasTriggeredTurn = true;
-                        } else if (wheelCurrentRotation > TURN_THRESHOLD) {
-                            movePlayer(1);
-                            hasTriggeredTurn = true;
-                        }
-                    } else {
-                        if (Math.abs(wheelCurrentRotation) < RESET_THRESHOLD) {
-                            hasTriggeredTurn = false;
-                        }
-                    }
-                });
-
-                window.addEventListener('mouseup', resetWheel);
+                // Window Resize
+                window.addEventListener('resize', handleResize);
             }
 
-            // Touch Controls (Swiping) - Keep as fallback
-            window.addEventListener('touchstart', handleTouchStart, { passive: false });
-            window.addEventListener('touchmove', handleTouchMove, { passive: false });
-            window.addEventListener('touchend', handleTouchEnd);
+            function handleKeyDown(e) {
+                if (gameOver) return;
+                switch (e.key) {
+                    case 'ArrowLeft':
+                    case 'a':
+                        movePlayer(-1);
+                        break;
+                    case 'ArrowRight':
+                    case 'd':
+                        movePlayer(1);
+                        break;
+                    case 'ArrowUp':
+                    case 'w':
+                        isAccelerating = true;
+                        break;
+                    case 'ArrowDown':
+                    case 's':
+                        isBraking = true;
+                        break;
+                }
+            }
 
-            // Restart Button
-            restartButton.addEventListener('click', resetGame);
+            function handleKeyUp(e) {
+                switch (e.key) {
+                    case 'ArrowUp':
+                    case 'w':
+                        isAccelerating = false;
+                        break;
+                    case 'ArrowDown':
+                    case 's':
+                        isBraking = false;
+                        break;
+                }
+            }
 
-            // Window Resize
-            window.addEventListener('resize', handleResize);
-        }
+            function movePlayer(direction) {
+                playerLane = Math.max(0, Math.min(LANE_COUNT - 1, playerLane + direction));
+                playerTargetX = laneToX(playerLane);
+            }
 
-        function handleKeyDown(e) {
-            if (gameOver) return;
-            switch (e.key) {
-                case 'ArrowLeft':
-                case 'a':
-                    movePlayer(-1);
-                    break;
-                case 'ArrowRight':
-                case 'd':
+            function handleTouchStart(e) {
+                // Only track swipes if NOT touching controls
+                // Check if target is inside mobileControls
+                if (e.target.closest && e.target.closest('#mobileControls')) {
+                    return;
+                }
+                touchStartX = e.touches[0].clientX;
+            }
+
+            function handleTouchMove(e) {
+                if (touchStartX === 0) return;
+                touchEndX = e.touches[0].clientX;
+            }
+
+            function handleTouchEnd() {
+                if (gameOver || touchStartX === 0) {
+                    touchStartX = 0;
+                    touchEndX = 0;
+                    return;
+                }
+
+                const diff = touchEndX - touchStartX;
+
+                if (diff > SWIPE_THRESHOLD) {
+                    // Swipe Right
                     movePlayer(1);
-                    break;
-                case 'ArrowUp':
-                case 'w':
-                    isAccelerating = true;
-                    break;
-                case 'ArrowDown':
-                case 's':
-                    isBraking = true;
-                    break;
-            }
-        }
+                } else if (diff < -SWIPE_THRESHOLD) {
+                    // Swipe Left
+                    movePlayer(-1);
+                }
 
-        function handleKeyUp(e) {
-            switch (e.key) {
-                case 'ArrowUp':
-                case 'w':
-                    isAccelerating = false;
-                    break;
-                case 'ArrowDown':
-                case 's':
-                    isBraking = false;
-                    break;
-            }
-        }
-
-        function movePlayer(direction) {
-            playerLane = Math.max(0, Math.min(LANE_COUNT - 1, playerLane + direction));
-            playerTargetX = laneToX(playerLane);
-        }
-
-        function handleTouchStart(e) {
-            // Only track swipes if NOT touching controls
-            // Check if target is inside mobileControls
-            if (e.target.closest && e.target.closest('#mobileControls')) {
-                return;
-            }
-            touchStartX = e.touches[0].clientX;
-        }
-
-        function handleTouchMove(e) {
-            if (touchStartX === 0) return;
-            touchEndX = e.touches[0].clientX;
-        }
-
-        function handleTouchEnd() {
-            if (gameOver || touchStartX === 0) {
+                // Reset for next swipe
                 touchStartX = 0;
                 touchEndX = 0;
-                return;
             }
 
-            const diff = touchEndX - touchStartX;
+            function updateCanvasSize() {
+                // Prioritize smaller canvas on tall/narrow mobile screens
+                if (window.innerWidth < 768 && window.innerHeight > window.innerWidth) {
+                    CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.95);
+                    CANVAS_HEIGHT = Math.min(500, window.innerHeight * 0.5);
+                } else {
+                    // Standard logic for desktop or landscape mobile
+                    CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.9);
+                    CANVAS_HEIGHT = Math.min(600, window.innerHeight * 0.6);
+                }
 
-            if (diff > SWIPE_THRESHOLD) {
-                // Swipe Right
-                movePlayer(1);
-            } else if (diff < -SWIPE_THRESHOLD) {
-                // Swipe Left
-                movePlayer(-1);
+                if (canvas) {
+                    canvas.width = CANVAS_WIDTH;
+                    canvas.height = CANVAS_HEIGHT;
+                }
             }
 
-            // Reset for next swipe
-            touchStartX = 0;
-            touchEndX = 0;
-        }
+            function handleResize() {
+                updateCanvasSize();
 
-        function updateCanvasSize() {
-            // Prioritize smaller canvas on tall/narrow mobile screens
-            if (window.innerWidth < 768 && window.innerHeight > window.innerWidth) {
-                CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.95);
-                CANVAS_HEIGHT = Math.min(500, window.innerHeight * 0.5);
-            } else {
-                // Standard logic for desktop or landscape mobile
-                CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.9);
-                CANVAS_HEIGHT = Math.min(600, window.innerHeight * 0.6);
+                // Update camera aspect ratio and renderer size
+                if (camera && renderer) {
+                    camera.aspect = CANVAS_WIDTH / CANVAS_HEIGHT;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(CANVAS_WIDTH, CANVAS_HEIGHT);
+                }
             }
 
-            if (canvas) {
-                canvas.width = CANVAS_WIDTH;
-                canvas.height = CANVAS_HEIGHT;
-            }
-        }
-
-        function handleResize() {
-            updateCanvasSize();
-
-            // Update camera aspect ratio and renderer size
-            if (camera && renderer) {
-                camera.aspect = CANVAS_WIDTH / CANVAS_HEIGHT;
-                camera.updateProjectionMatrix();
-                renderer.setSize(CANVAS_WIDTH, CANVAS_HEIGHT);
-            }
         }
 
         // --- Start the game ---
         init();
-
     </script>
 
 </body>
