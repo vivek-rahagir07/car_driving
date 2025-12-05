@@ -259,6 +259,12 @@
         const btnGas = document.getElementById('btnGas');
         const btnBrake = document.getElementById('btnBrake');
 
+        // --- Steering Logic Variables ---
+        let isDraggingWheel = false;
+        let wheelInitAngle = 0;
+        let wheelCurrentRotation = 0;
+        let hasTriggeredTurn = false; // Prevent multiple turns in one drag without resetting
+
         // --- 3D Scene Variables ---
         let scene, camera, renderer;
         let playerCar, road, roadLines = [];
@@ -1162,49 +1168,125 @@
             attachBtnEvents(btnGas, () => isAccelerating = true, () => isAccelerating = false);
             attachBtnEvents(btnBrake, () => isBraking = true, () => isBraking = false);
 
-            // Steering Wheel Logic
-            if (steeringContainer) {
-                const handleSteer = (clientX) => {
+            // Steering Wheel Logic - Drag to Steer
+            if (steeringContainer && steeringWheel) {
+
+                const getAngle = (clientX, clientY) => {
                     const rect = steeringContainer.getBoundingClientRect();
                     const centerX = rect.left + rect.width / 2;
-
-                    // Determine side relative to center of wheel
-                    if (clientX < centerX) {
-                        // Left
-                        movePlayer(-1);
-                        updateSteeringVisual(-45);
-                    } else {
-                        // Right
-                        movePlayer(1);
-                        updateSteeringVisual(45);
-                    }
-                    triggerHaptic('medium');
+                    const centerY = rect.top + rect.height / 2;
+                    return Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
                 };
 
-                const updateSteeringVisual = (deg) => {
-                    if (steeringWheel) {
-                        steeringWheel.style.transform = `rotate(${deg}deg)`;
-                        // Reset after a short delay to simulate return-to-center
-                        setTimeout(() => {
-                            steeringWheel.style.transform = `rotate(0deg)`;
-                        }, 200);
-                    }
+                const resetWheel = () => {
+                    isDraggingWheel = false;
+                    wheelCurrentRotation = 0;
+                    hasTriggeredTurn = false;
+
+                    // Re-enable transition for smooth return
+                    steeringWheel.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                    steeringWheel.style.transform = `rotate(0deg)`;
                 };
 
                 steeringContainer.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     if (e.touches.length > 0) {
-                        handleSteer(e.touches[0].clientX);
+                        isDraggingWheel = true;
+                        // Disable transition for instant tracking
+                        steeringWheel.style.transition = 'none';
+
+                        const touch = e.touches[0];
+                        // Calculate initial offset angle so the wheel doesn't jump to finger position
+                        const angle = getAngle(touch.clientX, touch.clientY);
+                        wheelInitAngle = angle - wheelCurrentRotation;
                     }
                 }, { passive: false });
 
-                // Allow "dragging" on the wheel to steer continuously or correct?
-                // For this game's lane logic, taps are likely better, but let's support repetitive taps if they lift finger.
+                steeringContainer.addEventListener('touchmove', (e) => {
+                    if (!isDraggingWheel) return;
+                    e.preventDefault();
+
+                    const touch = e.touches[0];
+                    const angle = getAngle(touch.clientX, touch.clientY);
+
+                    // Update rotation
+                    // We want the wheel to follow the finger relative to where we started
+                    // But for a simple steering wheel, usually we just map the angle directly 
+                    // or mapped from the "down" position (90 degrees). 
+                    // Let's try simple relative tracking first.
+
+                    let newRotation = angle - wheelInitAngle;
+
+                    // Normalize to keep it sane (optional, but good if wrapping around)
+                    // Clamp rotation to resemble real max lock (e.g. -90 to 90)
+                    newRotation = Math.max(-100, Math.min(100, newRotation));
+
+                    wheelCurrentRotation = newRotation;
+                    steeringWheel.style.transform = `rotate(${wheelCurrentRotation}deg)`;
+
+                    // Threshold Logic
+                    const TURN_THRESHOLD = 30;
+                    const RESET_THRESHOLD = 10;
+
+                    if (!hasTriggeredTurn) {
+                        if (wheelCurrentRotation < -TURN_THRESHOLD) {
+                            movePlayer(-1);
+                            triggerHaptic('heavy');
+                            hasTriggeredTurn = true;
+                        } else if (wheelCurrentRotation > TURN_THRESHOLD) {
+                            movePlayer(1);
+                            triggerHaptic('heavy');
+                            hasTriggeredTurn = true;
+                        }
+                    } else {
+                        // Reset trigger if user brings wheel back to center
+                        if (Math.abs(wheelCurrentRotation) < RESET_THRESHOLD) {
+                            hasTriggeredTurn = false;
+                            triggerHaptic('light'); // Subtle click on center
+                        }
+                    }
+
+                }, { passive: false });
+
+                steeringContainer.addEventListener('touchend', resetWheel);
+                steeringContainer.addEventListener('touchcancel', resetWheel);
 
                 // Mouse fallback
                 steeringContainer.addEventListener('mousedown', (e) => {
-                    handleSteer(e.clientX);
+                    isDraggingWheel = true;
+                    steeringWheel.style.transition = 'none';
+                    const angle = getAngle(e.clientX, e.clientY);
+                    wheelInitAngle = angle - wheelCurrentRotation;
                 });
+
+                window.addEventListener('mousemove', (e) => {
+                    if (!isDraggingWheel) return;
+                    const angle = getAngle(e.clientX, e.clientY);
+                    let newRotation = angle - wheelInitAngle;
+                    newRotation = Math.max(-100, Math.min(100, newRotation));
+
+                    wheelCurrentRotation = newRotation;
+                    steeringWheel.style.transform = `rotate(${wheelCurrentRotation}deg)`;
+
+                    const TURN_THRESHOLD = 30;
+                    const RESET_THRESHOLD = 10;
+
+                    if (!hasTriggeredTurn) {
+                        if (wheelCurrentRotation < -TURN_THRESHOLD) {
+                            movePlayer(-1);
+                            hasTriggeredTurn = true;
+                        } else if (wheelCurrentRotation > TURN_THRESHOLD) {
+                            movePlayer(1);
+                            hasTriggeredTurn = true;
+                        }
+                    } else {
+                        if (Math.abs(wheelCurrentRotation) < RESET_THRESHOLD) {
+                            hasTriggeredTurn = false;
+                        }
+                    }
+                });
+
+                window.addEventListener('mouseup', resetWheel);
             }
 
             // Touch Controls (Swiping) - Keep as fallback
