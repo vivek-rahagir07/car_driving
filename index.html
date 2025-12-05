@@ -97,79 +97,92 @@
             bottom: 20px;
             left: 0;
             width: 100%;
-            height: 140px;
+            height: 180px;
             pointer-events: none;
-            /* Let clicks pass through empty areas */
             display: flex;
             justify-content: space-between;
             padding: 0 20px;
             z-index: 20;
         }
 
-        .control-group {
+        .control-section {
             display: flex;
-            gap: 15px;
             align-items: flex-end;
             pointer-events: auto;
-            /* Re-enable clicks on button groups */
         }
 
-        .d-pad-btn {
-            width: 70px;
-            height: 70px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            border-radius: 12px;
+        #steeringContainer {
+            width: 160px;
+            height: 160px;
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 24px;
-            user-select: none;
-            touch-action: none;
-            transition: all 0.1s;
         }
 
-        .d-pad-btn:active,
-        .d-pad-btn.active {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(0.95);
+        #steeringWheel {
+            width: 100%;
+            height: 100%;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='none' stroke='%23333' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='44' fill='%231a1a1a' stroke='%23555' stroke-width='2'/%3E%3Cpath d='M50 50 L50 6' stroke='%23333' stroke-width='8'/%3E%3Cpath d='M50 50 L10 70' stroke='%23333' stroke-width='8'/%3E%3Cpath d='M50 50 L90 70' stroke='%23333' stroke-width='8'/%3E%3Ccircle cx='50' cy='50' r='10' fill='%23333'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23555'/%3E%3Cpath d='M48 6 L52 6' stroke='red' stroke-width='4'/%3E%3C/svg%3E") no-repeat center center;
+            background-size: contain;
+            transition: transform 0.1s ease-out;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
         }
 
-        .action-btn {
-            border-radius: 50%;
+        .pedal-group {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            border: 3px solid rgba(255, 255, 255, 0.5);
-            user-select: none;
-            touch-action: none;
+            gap: 20px;
+            align-items: flex-end;
         }
 
-        .action-btn:active,
-        .action-btn.active {
-            transform: scale(0.95);
-            opacity: 0.9;
+        .pedal {
+            position: relative;
+            transition: transform 0.1s;
+            filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.4));
         }
 
-        #btnGas {
-            width: 90px;
-            height: 90px;
-            background: linear-gradient(to top, #16a34a, #22c55e);
-            font-size: 1.2rem;
-            margin-bottom: 0px;
+        .pedal:active,
+        .pedal.active {
+            transform: scale(0.95) translateY(2px);
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
         }
 
         #btnBrake {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(to top, #dc2626, #ef4444);
-            font-size: 1rem;
-            margin-bottom: 20px;
+            width: 80px;
+            height: 60px;
+            background: linear-gradient(180deg, #555, #333);
+            border-radius: 8px;
+            border: 2px solid #777;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #btnBrake::after {
+            content: '';
+            width: 70%;
+            height: 4px;
+            background: #222;
+            box-shadow: 0 10px 0 #222, 0 20px 0 #222;
+        }
+
+        #btnGas {
+            width: 60px;
+            height: 120px;
+            background: linear-gradient(180deg, #333, #111);
+            border-radius: 8px;
+            border: 2px solid #555;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #btnGas::after {
+            content: '';
+            width: 4px;
+            height: 80%;
+            background: #222;
+            box-shadow: 10px 0 0 #222, -10px 0 0 #222;
         }
 
         /* Hide specific elements on mobile if needed */
@@ -196,26 +209,17 @@
 
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Mobile Controls Overlay (Show only on touch devices/small screens) -->
+    <!-- Mobile Controls Overlay -->
     <div id="mobileControls" class="md:hidden">
-        <div class="control-group">
-            <div id="btnLeft" class="d-pad-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m15 18-6-6 6-6" />
-                </svg>
-            </div>
-            <div id="btnRight" class="d-pad-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m9 18 6-6-6-6" />
-                </svg>
+        <div class="control-section">
+            <div id="steeringContainer">
+                <div id="steeringWheel"></div>
             </div>
         </div>
 
-        <div class="control-group">
-            <div id="btnBrake" class="action-btn">Brake</div>
-            <div id="btnGas" class="action-btn">GAS</div>
+        <div class="control-section pedal-group">
+            <div id="btnBrake" class="pedal"></div>
+            <div id="btnGas" class="pedal"></div>
         </div>
     </div>
 
@@ -250,9 +254,8 @@
         const finalScoreEl = document.getElementById('finalScore');
         const finalComboEl = document.getElementById('finalCombo');
         const restartButton = document.getElementById('restartButton');
-        // New Mobile Controls
-        const btnLeft = document.getElementById('btnLeft');
-        const btnRight = document.getElementById('btnRight');
+        const steeringContainer = document.getElementById('steeringContainer');
+        const steeringWheel = document.getElementById('steeringWheel');
         const btnGas = document.getElementById('btnGas');
         const btnBrake = document.getElementById('btnBrake');
 
@@ -277,7 +280,7 @@
         const PLAYER_Z_POSITION = 15;
         const SPAWN_Z_POSITION = -ROAD_LENGTH * 1.5;
         const DESPAWN_Z_POSITION = PLAYER_Z_POSITION + 20;
-        const SWIPE_THRESHOLD = 50; // Min pixels for a swipe
+
 
         // --- Game State Variables ---
         let score, gameSpeed, gameOver, animationFrameId;
@@ -289,8 +292,7 @@
         let maxCombo = 0;
         let comboTimer = 0;
         let particles = [];
-        let touchStartX = 0;
-        let touchEndX = 0;
+
         let lastSpawnZ = SPAWN_Z_POSITION; // To avoid object pileups
         let lastCoinSpawnZ = SPAWN_Z_POSITION; // <-- ADDED
 
@@ -641,7 +643,7 @@
             coin.rotation.x = Math.PI / 2; // Lay flat
 
             // The coin itself is the collision box
-            coin.userData.box = new THREE.Box3().setFromObject(coin);
+            coin.userData.box = new THREE.Box3();
 
             const coinGroup = new THREE.Group();
             coinGroup.add(coin);
@@ -1122,19 +1124,27 @@
             window.addEventListener('keyup', handleKeyUp);
 
             // Mobile Buttons
+            const triggerHaptic = (style = 'medium') => {
+                if (navigator.vibrate) {
+                    // Simple pattern for feedback
+                    navigator.vibrate(style === 'heavy' ? 30 : 10);
+                }
+            };
+
             const attachBtnEvents = (btn, startAction, endAction) => {
                 if (!btn) return;
                 btn.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     startAction();
                     btn.classList.add('active');
+                    triggerHaptic('heavy');
                 }, { passive: false });
                 btn.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     endAction();
                     btn.classList.remove('active');
                 });
-                // Mouse fallback for testing
+                // Mouse
                 btn.addEventListener('mousedown', (e) => {
                     startAction();
                     btn.classList.add('active');
@@ -1152,49 +1162,52 @@
             attachBtnEvents(btnGas, () => isAccelerating = true, () => isAccelerating = false);
             attachBtnEvents(btnBrake, () => isBraking = true, () => isBraking = false);
 
-            // Steering needs a repeat interval or just simple tap? 
-            // For lane switching, simple tap is best. But holding might be expected? 
-            // Let's do simple tap for now to avoid rapid lane switching chaos.
+            // Steering Wheel Logic
+            if (steeringContainer) {
+                const handleSteer = (clientX) => {
+                    const rect = steeringContainer.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
 
-            // Left Button
-            if (btnLeft) {
-                btnLeft.addEventListener('touchstart', (e) => {
+                    // Determine side relative to center of wheel
+                    if (clientX < centerX) {
+                        // Left
+                        movePlayer(-1);
+                        updateSteeringVisual(-45);
+                    } else {
+                        // Right
+                        movePlayer(1);
+                        updateSteeringVisual(45);
+                    }
+                    triggerHaptic('medium');
+                };
+
+                const updateSteeringVisual = (deg) => {
+                    if (steeringWheel) {
+                        steeringWheel.style.transform = `rotate(${deg}deg)`;
+                        // Reset after a short delay to simulate return-to-center
+                        setTimeout(() => {
+                            steeringWheel.style.transform = `rotate(0deg)`;
+                        }, 200);
+                    }
+                };
+
+                steeringContainer.addEventListener('touchstart', (e) => {
                     e.preventDefault();
-                    btnLeft.classList.add('active');
-                    movePlayer(-1);
+                    if (e.touches.length > 0) {
+                        handleSteer(e.touches[0].clientX);
+                    }
                 }, { passive: false });
-                btnLeft.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    btnLeft.classList.remove('active');
+
+                // Allow "dragging" on the wheel to steer continuously or correct?
+                // For this game's lane logic, taps are likely better, but let's support repetitive taps if they lift finger.
+
+                // Mouse fallback
+                steeringContainer.addEventListener('mousedown', (e) => {
+                    handleSteer(e.clientX);
                 });
-                // Mouse
-                btnLeft.addEventListener('mousedown', () => {
-                    btnLeft.classList.add('active');
-                    movePlayer(-1);
-                });
-                btnLeft.addEventListener('mouseup', () => btnLeft.classList.remove('active'));
             }
 
-            // Right Button
-            if (btnRight) {
-                btnRight.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    btnRight.classList.add('active');
-                    movePlayer(1);
-                }, { passive: false });
-                btnRight.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    btnRight.classList.remove('active');
-                });
-                // Mouse
-                btnRight.addEventListener('mousedown', () => {
-                    btnRight.classList.add('active');
-                    movePlayer(1);
-                });
-                btnRight.addEventListener('mouseup', () => btnRight.classList.remove('active'));
-            }
-
-            // Touch Controls (Swiping)
+            // Touch Controls (Swiping) - Keep as fallback
             window.addEventListener('touchstart', handleTouchStart, { passive: false });
             window.addEventListener('touchmove', handleTouchMove, { passive: false });
             window.addEventListener('touchend', handleTouchEnd);
