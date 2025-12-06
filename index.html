@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>City Driving</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -15,12 +15,14 @@
             overflow: hidden;
             /* Prevent scrolling and pull-to-refresh on mobile */
             touch-action: none;
+            background-color: #111827; /* Fallback color */
         }
 
         #gameCanvas {
             display: block;
             border-radius: 0.5rem;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            margin: 0 auto;
         }
 
         .game-button {
@@ -43,52 +45,6 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             background-image: linear-gradient(to right, #2563eb, #3b82f6);
-        }
-
-        .control-button {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.25rem;
-            color: white;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            border: 3px solid rgba(255, 255, 255, 0.5);
-            user-select: none;
-            transition: all 0.1s ease;
-        }
-
-        /* Class to be added on touch */
-        .control-button.active {
-            transform: scale(0.95);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        #accelButton {
-            background-image: linear-gradient(to top, #16a34a, #22c55e);
-        }
-
-        #brakeButton {
-            background-image: linear-gradient(to top, #dc2626, #ef4444);
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.05);
-            }
-        }
-
-        .pulse-animation {
-            animation: pulse 0.5s ease-in-out;
         }
 
         /* Mobile Controls Overlay */
@@ -139,6 +95,7 @@
             position: relative;
             transition: transform 0.1s;
             filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.4));
+            cursor: pointer;
         }
 
         .pedal:active,
@@ -185,7 +142,6 @@
             box-shadow: 10px 0 0 #222, -10px 0 0 #222;
         }
 
-        /* Hide specific elements on mobile if needed */
         @media (max-width: 768px) {
             .desktop-hint {
                 display: none;
@@ -196,12 +152,11 @@
 
 <body class="bg-gray-900 min-h-screen flex flex-col items-center justify-center text-white p-4">
 
-    <h1
-        class="text-4xl md:text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">
+    <h1 class="text-4xl md:text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 select-none">
         City Driving
     </h1>
 
-    <div class="mb-2 flex gap-6 text-xl font-medium">
+    <div class="mb-2 flex gap-6 text-xl font-medium select-none">
         <div>Score: <span id="score" class="font-bold text-yellow-300">0</span></div>
         <div>Speed: <span id="speedDisplay" class="font-bold text-cyan-300">1.0x</span></div>
         <div id="comboDisplay" class="font-bold text-green-400 hidden">Combo: <span id="comboValue">0</span>x</div>
@@ -218,18 +173,17 @@
         </div>
 
         <div class="control-section pedal-group">
-            <div id="btnBrake" class="pedal"></div>
-            <div id="btnGas" class="pedal"></div>
+            <div id="btnBrake" class="pedal" title="Brake"></div>
+            <div id="btnGas" class="pedal" title="Accelerate"></div>
         </div>
     </div>
 
-    <p class="mt-4 text-gray-400 text-sm md:text-base text-center desktop-hint">
+    <p class="mt-4 text-gray-400 text-sm md:text-base text-center desktop-hint select-none">
         Keys: Left/Right or A/D (Move), Up/W (Race), Down/S (Brake)
     </p>
 
     <div id="gameOverModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div
-            class="bg-white text-gray-900 p-8 md:p-12 rounded-lg shadow-2xl text-center transform scale-90 transition-all">
+        <div class="bg-white text-gray-900 p-8 md:p-12 rounded-lg shadow-2xl text-center transform scale-90 transition-all">
             <h2 class="text-3xl font-bold mb-4">Game Over!</h2>
             <p class="text-xl mb-2">
                 Final Score: <span id="finalScore" class="font-bold text-blue-600">0</span>
@@ -259,19 +213,7 @@
         const btnGas = document.getElementById('btnGas');
         const btnBrake = document.getElementById('btnBrake');
 
-        // --- Steering Logic Variables ---
-        let tiltEnabled = false;
-        let currentTilt = 0;
-        let hasTriggeredTurn = false; // Prevent multiple turns in one drag without resetting
-
-        // --- 3D Scene Variables ---
-        let scene, camera, renderer;
-        let playerCar, road, roadLines = [];
-        let enemies = [], ambulances = [], trafficLights = [], scenery = [];
-        let coins = []; // <-- ADDED
-
         // --- Game Constants ---
-        // Moved this block *before* Game State Variables to fix initialization error
         const LANE_COUNT = 3;
         const LANE_WIDTH = 5;
         const ROAD_WIDTH = LANE_COUNT * LANE_WIDTH;
@@ -281,27 +223,14 @@
         const CAR_BODY_DEPTH = 4.5;
         const WHEEL_RADIUS = 0.5;
         const WHEEL_THICKNESS = 0.3;
-
         const PLAYER_Z_POSITION = 15;
         const SPAWN_Z_POSITION = -ROAD_LENGTH * 1.5;
         const DESPAWN_Z_POSITION = PLAYER_Z_POSITION + 20;
+        
+        // Touch Constants
+        const SWIPE_THRESHOLD = 30;
 
-
-        // --- Game State Variables ---
-        let score, gameSpeed, gameOver, animationFrameId;
-        let playerLane = 1;
-        let playerTargetX = 0;
-        let isAccelerating = false;
-        let isBraking = false;
-        let combo = 0;
-        let maxCombo = 0;
-        let comboTimer = 0;
-        let particles = [];
-
-        let lastSpawnZ = SPAWN_Z_POSITION; // To avoid object pileups
-        let lastCoinSpawnZ = SPAWN_Z_POSITION; // <-- ADDED
-
-        // --- Color Palette ---
+        // --- Colors ---
         const PLAYER_COLOR = 0x3b82f6;
         const ENEMY_COLORS = [0xef4444, 0xf97316, 0xeab308, 0x8b5cf6, 0xec4899, 0x10b981, 0x6b7280];
         const AMBULANCE_LIGHT_COLOR = 0xef4444;
@@ -309,34 +238,54 @@
         const RED_LIGHT_COLOR = 0xef4444;
         const ROAD_COLOR = 0x34495e;
         const LINE_COLOR = 0xffffff;
-        const TREE_TRUNK_COLOR = 0x845320;
-        const TREE_LEAVES_COLOR = 0x22c55e;
-        const BUILDING_COLORS = [0x6b7280, 0x71717a, 0x52525b];
-        const STREET_LIGHT_COLOR = 0xf1c40f;
-        const STREET_POLE_COLOR = 0x555555;
-        const COIN_COLOR = 0xffd700; // <-- ADDED
+        const TREE_TRUNK_COLOR = 0x5d4037;
+        const TREE_LEAVES_COLOR = 0x2e7d32;
+        const BUILDING_COLORS = [0x374151, 0x4b5563, 0x1f2937, 0x111827];
+        const STREET_LIGHT_POLE_COLOR = 0x6b7280;
+        const STREET_LIGHT_BULB_COLOR = 0xfef08a;
+        const COIN_COLOR = 0xffd700;
 
+        // --- State Variables ---
+        let scene, camera, renderer;
+        let playerCar, road;
+        let roadLines = [];
+        let enemies = [], ambulances = [], trafficLights = [], scenery = [], coins = [];
+        let particles = [];
+        
+        let score = 0;
+        let gameSpeed = 0.3;
+        let gameOver = false;
+        let animationFrameId;
+        
+        let playerLane = 1;
+        let playerTargetX = 0;
+        let isAccelerating = false;
+        let isBraking = false;
+        let combo = 0;
+        let maxCombo = 0;
+        let comboTimer = 0;
+
+        let lastSpawnZ = SPAWN_Z_POSITION;
+        
         let CANVAS_WIDTH, CANVAS_HEIGHT;
+        
+        // Input Vars
+        let tiltEnabled = false;
+        let currentTilt = 0;
+        let hasTriggeredTurn = false;
+        let touchStartX = 0;
+        let touchEndX = 0;
 
         // --- Utility Functions ---
-        function random(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
+        function random(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function randomFloat(min, max) { return Math.random() * (max - min) + min; }
+        function laneToX(lane) { return (lane - (LANE_COUNT - 1) / 2) * LANE_WIDTH; }
 
-        function randomFloat(min, max) {
-            return Math.random() * (max - min) + min;
-        }
-
-        function laneToX(lane) {
-            // Calculates the X coordinate for a given lane index
-            return (lane - (LANE_COUNT - 1) / 2) * LANE_WIDTH;
-        }
-
-        // --- Core Game Setup ---
+        // --- Init & Reset ---
         function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x2c3e50);
-            scene.fog = new THREE.Fog(0x2c3e50, 50, 150);
+            scene.background = new THREE.Color(0x1e293b); // Darker night/evening sky
+            scene.fog = new THREE.Fog(0x1e293b, 40, 130);
 
             updateCanvasSize();
             camera = new THREE.PerspectiveCamera(75, CANVAS_WIDTH / CANVAS_HEIGHT, 0.1, 1000);
@@ -347,62 +296,70 @@
             renderer.setSize(CANVAS_WIDTH, CANVAS_HEIGHT);
             renderer.shadowMap.enabled = true;
 
-            // --- Lighting ---
-            const ambientLight = new THREE.HemisphereLight(0xaaccff, 0x444444, 0.8);
+            // Lights
+            const ambientLight = new THREE.HemisphereLight(0x4b5563, 0x111827, 0.6);
             scene.add(ambientLight);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-            dirLight.position.set(10, 20, 0);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(-10, 20, 10);
             dirLight.castShadow = true;
-            dirLight.shadow.camera.top = 30;
-            dirLight.shadow.camera.bottom = -30;
-            dirLight.shadow.camera.left = -30;
-            dirLight.shadow.camera.right = 30;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.top = 50;
+            dirLight.shadow.camera.bottom = -50;
+            dirLight.shadow.camera.left = -50;
+            dirLight.shadow.camera.right = 50;
             scene.add(dirLight);
 
-            // --- Road ---
-            const roadGeometry = new THREE.PlaneGeometry(ROAD_WIDTH, ROAD_LENGTH * 2);
-            const roadMaterial = new THREE.MeshStandardMaterial({
-                color: ROAD_COLOR,
-                roughness: 0.8,
-                metalness: 0.1
-            });
+            // Road
+            const roadGeometry = new THREE.PlaneGeometry(ROAD_WIDTH, ROAD_LENGTH * 3);
+            const roadMaterial = new THREE.MeshStandardMaterial({ color: ROAD_COLOR, roughness: 0.8, metalness: 0.1 });
             road = new THREE.Mesh(roadGeometry, roadMaterial);
             road.rotation.x = -Math.PI / 2;
             road.position.z = -ROAD_LENGTH / 2 + PLAYER_Z_POSITION;
             road.receiveShadow = true;
             scene.add(road);
 
-            // --- Road Lines ---
+            // Sidewalks
+            const sidewalkGeom = new THREE.PlaneGeometry(5, ROAD_LENGTH * 3);
+            const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af });
+            
+            const leftWalk = new THREE.Mesh(sidewalkGeom, sidewalkMat);
+            leftWalk.rotation.x = -Math.PI / 2;
+            leftWalk.position.set(-ROAD_WIDTH/2 - 2.5, 0.02, road.position.z);
+            leftWalk.receiveShadow = true;
+            scene.add(leftWalk);
+            
+            const rightWalk = new THREE.Mesh(sidewalkGeom, sidewalkMat);
+            rightWalk.rotation.x = -Math.PI / 2;
+            rightWalk.position.set(ROAD_WIDTH/2 + 2.5, 0.02, road.position.z);
+            rightWalk.receiveShadow = true;
+            scene.add(rightWalk);
+
+            // Lines
             const lineMat = new THREE.MeshStandardMaterial({ color: LINE_COLOR, roughness: 0.5 });
-            const lineGeom = new THREE.PlaneGeometry(0.5, 7);
-            const lineGap = 10;
+            const lineGeom = new THREE.PlaneGeometry(0.3, 4);
+            const lineGap = 8;
             for (let i = 1; i < LANE_COUNT; i++) {
                 const lineX = laneToX(i - 1) + LANE_WIDTH / 2;
-                for (let z = -ROAD_LENGTH * 2; z < ROAD_LENGTH * 2; z += lineGap + 7) {
+                for (let z = -ROAD_LENGTH * 2; z < ROAD_LENGTH * 2; z += lineGap) {
                     const line = new THREE.Mesh(lineGeom, lineMat);
                     line.rotation.x = -Math.PI / 2;
-                    line.position.set(lineX, 0.01, z);
+                    line.position.set(lineX, 0.03, z);
                     scene.add(line);
                     roadLines.push(line);
                 }
             }
 
-            // --- Add Event Listeners ---
             addEventListeners();
-
-            resetGame(); // Set up initial game state
+            resetGame();
         }
 
         function resetGame() {
-            // Stop previous loop if running
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-            // Reset game state variables
             score = 0;
-            gameSpeed = 0.3; // <-- CHANGED
+            gameSpeed = 0.3;
             gameOver = false;
             isAccelerating = false;
             isBraking = false;
@@ -410,98 +367,44 @@
             maxCombo = 0;
             comboTimer = 0;
             lastSpawnZ = SPAWN_Z_POSITION;
-            lastCoinSpawnZ = SPAWN_Z_POSITION; // <-- ADDED
 
-            // Clear old car if it exists
+            // Cleanup
             if (playerCar) scene.remove(playerCar);
-
-            // Clear all obstacles and scenery
             [...enemies, ...ambulances, ...trafficLights].forEach(obj => scene.remove(obj.mesh));
-            scenery.forEach(obj => scene.remove(obj)); // This removes groups (trees, buildings, lights)
-            coins.forEach(obj => scene.remove(obj.mesh)); // <-- ADDED
-            enemies = [];
-            ambulances = [];
-            trafficLights = [];
-            scenery = [];
-            coins = []; // <-- ADDED
-
-            // Clear particles
+            scenery.forEach(obj => scene.remove(obj.mesh));
+            coins.forEach(obj => scene.remove(obj.mesh));
             particles.forEach(p => scene.remove(p));
-            particles = [];
 
-            // Create new player car
+            enemies = []; ambulances = []; trafficLights = []; scenery = []; coins = []; particles = [];
+
+            // Pre-spawn scenery
+            for (let z = PLAYER_Z_POSITION; z > SPAWN_Z_POSITION * 1.5; z -= 15) {
+                spawnSceneryRow(z);
+            }
+
+            // Player Setup
             playerCar = createCar(PLAYER_COLOR, true);
             playerLane = 1;
             playerTargetX = laneToX(playerLane);
             playerCar.position.set(playerTargetX, 0, PLAYER_Z_POSITION);
             scene.add(playerCar);
 
-            // Reset UI
+            // UI Reset
             scoreEl.textContent = score;
             speedDisplayEl.textContent = '1.0x';
             comboDisplayEl.classList.add('hidden');
             modalEl.classList.add('hidden');
-            modalEl.querySelector('div').classList.remove('scale-100');
-            modalEl.querySelector('div').classList.add('scale-90');
-
-            // Start the game loop
+            
             animate();
         }
 
-        // --- Particle System ---
-        function createParticle(position, color) {
-            const geom = new THREE.SphereGeometry(0.3, 8, 8);
-            const mat = new THREE.MeshStandardMaterial({
-                color: color,
-                emissive: color,
-                emissiveIntensity: 1
-            });
-            const particle = new THREE.Mesh(geom, mat);
-            particle.position.copy(position);
-
-            const velocity = new THREE.Vector3(
-                randomFloat(-2, 2),
-                randomFloat(1, 3),
-                randomFloat(-2, 2)
-            );
-
-            particle.userData.velocity = velocity;
-            particle.userData.life = 1.0;
-
-            scene.add(particle);
-            particles.push(particle);
-        }
-
-        function updateParticles() {
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.position.add(p.userData.velocity);
-                p.userData.velocity.y -= 0.05; // Gravity
-                p.userData.life -= 0.02;
-
-                p.material.opacity = p.userData.life;
-                p.material.transparent = true;
-
-                if (p.userData.life <= 0) {
-                    scene.remove(p);
-                    particles.splice(i, 1);
-                }
-            }
-        }
-
-        // --- Object Creation ---
-        // --- REVISED createCar function (Removed the duplicate) ---
+        // --- Object Creators ---
         function createCar(color, isPlayer = false) {
             const car = new THREE.Group();
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
-            const bodyMat = new THREE.MeshStandardMaterial({
-                color: color,
-                metalness: 0.8,
-                roughness: 0.2
-            });
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.6, roughness: 0.2 });
 
-            // --- New Body Shape ---
-            // Main Chassis (this will be the collision box)
+            // Chassis
             const chassisHeight = CAR_BODY_HEIGHT * 0.8;
             const chassisGeom = new THREE.BoxGeometry(CAR_BODY_WIDTH, chassisHeight, CAR_BODY_DEPTH);
             const chassis = new THREE.Mesh(chassisGeom, bodyMat);
@@ -510,258 +413,243 @@
             chassis.receiveShadow = true;
             car.add(chassis);
 
-            // We use the chassis for the collision box
-            car.userData.box = new THREE.Box3();
-
             // Cabin
             const cabinHeight = CAR_BODY_HEIGHT * 0.7;
             const cabinWidth = CAR_BODY_WIDTH * 0.7;
             const cabinDepth = CAR_BODY_DEPTH * 0.35;
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.1 });
             const cabinGeom = new THREE.BoxGeometry(cabinWidth, cabinHeight, cabinDepth);
-            const cabinMat = new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                roughness: 0.1,
-                transparent: true,
-                opacity: 0.7
-            });
             const cabin = new THREE.Mesh(cabinGeom, cabinMat);
-            cabin.position.y = chassis.position.y + chassisHeight / 2 + cabinHeight / 2 - 0.1;
-            cabin.position.z = isPlayer ? CAR_BODY_DEPTH * 0.1 : -CAR_BODY_DEPTH * 0.1; // Cabin offset
+            cabin.position.set(0, chassis.position.y + chassisHeight / 2 + cabinHeight / 2 - 0.1, isPlayer ? 0.5 : -0.5);
             cabin.castShadow = true;
             car.add(cabin);
 
-            // Hood
-            const hoodHeight = CAR_BODY_HEIGHT * 0.3;
-            const hoodGeom = new THREE.BoxGeometry(CAR_BODY_WIDTH * 0.8, hoodHeight, CAR_BODY_DEPTH * 0.4);
-            const hood = new THREE.Mesh(hoodGeom, bodyMat);
-            const hoodZPos = isPlayer ? CAR_BODY_DEPTH * 0.3 : -CAR_BODY_DEPTH * 0.3;
-            hood.position.set(0, chassis.position.y, hoodZPos);
-            car.add(hood);
-
-
-            // Player-only spoiler
+            // Headlights
             if (isPlayer) {
-                const spoilerGeom = new THREE.BoxGeometry(CAR_BODY_WIDTH * 1.1, 0.2, 0.5);
-                const spoiler = new THREE.Mesh(spoilerGeom, bodyMat);
-                spoiler.position.set(0, chassis.position.y + chassisHeight / 2, -CAR_BODY_DEPTH / 2 - 0.25);
-                car.add(spoiler);
+                const headLightGeom = new THREE.BoxGeometry(0.5, 0.2, 0.1);
+                const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2 });
+                const hlLeft = new THREE.Mesh(headLightGeom, headLightMat);
+                hlLeft.position.set(-0.8, chassis.position.y + 0.1, -CAR_BODY_DEPTH/2 - 0.05);
+                car.add(hlLeft);
+                const hlRight = new THREE.Mesh(headLightGeom, headLightMat);
+                hlRight.position.set(0.8, chassis.position.y + 0.1, -CAR_BODY_DEPTH/2 - 0.05);
+                car.add(hlRight);
+                
+                // Spotlights for night driving feel
+                const spotL = new THREE.SpotLight(0xffffff, 2, 40, 0.5, 0.5, 1);
+                spotL.position.set(-0.8, chassis.position.y + 0.1, -CAR_BODY_DEPTH/2);
+                spotL.target.position.set(-0.8, 0, -20);
+                car.add(spotL);
+                car.add(spotL.target);
+                
+                const spotR = new THREE.SpotLight(0xffffff, 2, 40, 0.5, 0.5, 1);
+                spotR.position.set(0.8, chassis.position.y + 0.1, -CAR_BODY_DEPTH/2);
+                spotR.target.position.set(0.8, 0, -20);
+                car.add(spotR);
+                car.add(spotR.target);
+            } else {
+                 // Taillights for enemies
+                const tailLightGeom = new THREE.BoxGeometry(0.5, 0.2, 0.1);
+                const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1 });
+                const tlLeft = new THREE.Mesh(tailLightGeom, tailLightMat);
+                tlLeft.position.set(-0.8, chassis.position.y + 0.2, CAR_BODY_DEPTH/2 + 0.05);
+                car.add(tlLeft);
+                const tlRight = new THREE.Mesh(tailLightGeom, tailLightMat);
+                tlRight.position.set(0.8, chassis.position.y + 0.2, CAR_BODY_DEPTH/2 + 0.05);
+                car.add(tlRight);
             }
 
             // Wheels
             const wheelGeom = new THREE.CylinderGeometry(WHEEL_RADIUS, WHEEL_RADIUS, WHEEL_THICKNESS, 16);
-            wheelGeom.rotateZ(Math.PI / 2); // Orient cylinders as wheels
-
-            const wheelPositions = [
-                new THREE.Vector3(-CAR_BODY_WIDTH / 2, WHEEL_RADIUS, CAR_BODY_DEPTH / 2 * 0.7), // Front Left
-                new THREE.Vector3(CAR_BODY_WIDTH / 2, WHEEL_RADIUS, CAR_BODY_DEPTH / 2 * 0.7),  // Front Right
-                new THREE.Vector3(-CAR_BODY_WIDTH / 2, WHEEL_RADIUS, -CAR_BODY_DEPTH / 2 * 0.7), // Back Left
-                new THREE.Vector3(CAR_BODY_WIDTH / 2, WHEEL_RADIUS, -CAR_BODY_DEPTH / 2 * 0.7)  // Back Right
-            ];
-
-            wheelPositions.forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeom, wheelMat);
-                wheel.position.copy(pos);
-                wheel.castShadow = true;
-                car.add(wheel);
+            wheelGeom.rotateZ(Math.PI / 2);
+            [
+                { x: -1, z: 0.7 }, { x: 1, z: 0.7 }, { x: -1, z: -0.7 }, { x: 1, z: -0.7 }
+            ].forEach(offset => {
+                const w = new THREE.Mesh(wheelGeom, wheelMat);
+                w.position.set(offset.x * (CAR_BODY_WIDTH / 2), WHEEL_RADIUS, offset.z * (CAR_BODY_DEPTH / 2));
+                w.castShadow = true;
+                car.add(w);
             });
 
-            // Lights
-            const lightGeom = new THREE.BoxGeometry(CAR_BODY_WIDTH * 0.2, CAR_BODY_HEIGHT * 0.3, 0.1);
-
-            if (isPlayer) {
-                // Taillights for player
-                const taillightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1 });
-                const lightL = new THREE.Mesh(lightGeom, taillightMat);
-                const lightR = new THREE.Mesh(lightGeom, taillightMat);
-                lightL.position.set(-CAR_BODY_WIDTH * 0.3, chassis.position.y, -CAR_BODY_DEPTH / 2 - 0.01);
-                lightR.position.set(CAR_BODY_WIDTH * 0.3, chassis.position.y, -CAR_BODY_DEPTH / 2 - 0.01);
-                car.add(lightL, lightR);
-            } else {
-                // Headlights for enemies
-                const headlightMat = new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 1 });
-                const lightL = new THREE.Mesh(lightGeom, headlightMat);
-                const lightR = new THREE.Mesh(lightGeom, headlightMat);
-                lightL.position.set(-CAR_BODY_WIDTH * 0.3, chassis.position.y, CAR_BODY_DEPTH / 2 + 0.01);
-                lightR.position.set(CAR_BODY_WIDTH * 0.3, chassis.position.y, CAR_BODY_DEPTH / 2 + 0.01);
-                car.add(lightL, lightR);
-            }
-
-            // Set collision box from the chassis
-            car.userData.box.setFromObject(chassis);
-
+            car.userData.box = new THREE.Box3().setFromObject(chassis);
             return car;
         }
 
+        function createTree() {
+            const group = new THREE.Group();
+            
+            // Trunk
+            const trunkGeom = new THREE.CylinderGeometry(0.4, 0.5, 2, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: TREE_TRUNK_COLOR });
+            const trunk = new THREE.Mesh(trunkGeom, trunkMat);
+            trunk.position.y = 1;
+            trunk.castShadow = true;
+            group.add(trunk);
+            
+            // Leaves
+            const leavesGeom = new THREE.DodecahedronGeometry(1.5);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: TREE_LEAVES_COLOR });
+            const leaves = new THREE.Mesh(leavesGeom, leavesMat);
+            leaves.position.y = 2.8;
+            leaves.castShadow = true;
+            group.add(leaves);
+            
+            return group;
+        }
+
+        function createBuilding() {
+            const height = randomFloat(8, 20);
+            const width = randomFloat(5, 10);
+            const depth = randomFloat(5, 10);
+            const color = BUILDING_COLORS[random(0, BUILDING_COLORS.length-1)];
+            
+            const geom = new THREE.BoxGeometry(width, height, depth);
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.9 });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.position.y = height / 2;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            
+            // Simple windows (emissive dots)
+            if (Math.random() > 0.3) {
+                 const winGeom = new THREE.PlaneGeometry(0.5, 0.5);
+                 const winMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+                 for(let y = 2; y < height - 1; y += 2) {
+                     for(let x = -width/2 + 1; x < width/2; x+=2) {
+                         if(Math.random() > 0.4) {
+                             const win = new THREE.Mesh(winGeom, winMat);
+                             win.position.set(x, y, depth/2 + 0.05);
+                             mesh.add(win);
+                         }
+                     }
+                 }
+            }
+            
+            return mesh;
+        }
+
+        function createStreetLight() {
+            const group = new THREE.Group();
+            
+            // Pole
+            const poleGeom = new THREE.CylinderGeometry(0.1, 0.1, 8, 6);
+            const poleMat = new THREE.MeshStandardMaterial({ color: STREET_LIGHT_POLE_COLOR });
+            const pole = new THREE.Mesh(poleGeom, poleMat);
+            pole.position.y = 4;
+            pole.castShadow = true;
+            group.add(pole);
+            
+            // Arm
+            const armGeom = new THREE.BoxGeometry(2, 0.1, 0.1);
+            const arm = new THREE.Mesh(armGeom, poleMat);
+            arm.position.set(0.8, 7.8, 0);
+            group.add(arm);
+            
+            // Bulb Mesh
+            const bulbGeom = new THREE.BoxGeometry(0.5, 0.1, 0.3);
+            const bulbMat = new THREE.MeshStandardMaterial({ color: STREET_LIGHT_BULB_COLOR, emissive: STREET_LIGHT_BULB_COLOR, emissiveIntensity: 2 });
+            const bulb = new THREE.Mesh(bulbGeom, bulbMat);
+            bulb.position.set(1.5, 7.7, 0);
+            group.add(bulb);
+            
+            // Actual Light
+            const spot = new THREE.SpotLight(0xffaa00, 1.5, 15, 0.8, 0.5, 1);
+            spot.position.set(1.5, 7.5, 0);
+            spot.target.position.set(1.5, 0, 0);
+            group.add(spot);
+            group.add(spot.target);
+            
+            return group;
+        }
 
         function createAmbulance() {
-            const ambu = createCar(0xffffff); // White body
-
-            // Add flashing light on top
-            const lightGeom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-            const lightMat = new THREE.MeshStandardMaterial({
-                color: AMBULANCE_LIGHT_COLOR,
-                emissive: AMBULANCE_LIGHT_COLOR,
-                emissiveIntensity: 2
-            });
+            const ambu = createCar(0xffffff);
+            const lightGeom = new THREE.BoxGeometry(0.5, 0.3, 0.5);
+            const lightMat = new THREE.MeshStandardMaterial({ color: AMBULANCE_LIGHT_COLOR, emissive: AMBULANCE_LIGHT_COLOR, emissiveIntensity: 2 });
             const light = new THREE.Mesh(lightGeom, lightMat);
-            // Position it on top of the cabin
-            // --- UPDATED Y position based on new car model ---
-            light.position.set(0, (WHEEL_RADIUS + CAR_BODY_HEIGHT * 0.8) + (CAR_BODY_HEIGHT * 0.7) - 0.1, 0);
+            light.position.y = 2.2; 
             ambu.add(light);
-
             ambu.userData.flashingLight = light;
             ambu.userData.isAmbulance = true;
-
             return ambu;
         }
 
         function createTrafficLight(type) {
-            const lightGroup = new THREE.Group();
+            const group = new THREE.Group();
             const color = (type === 'GREEN') ? GREEN_LIGHT_COLOR : RED_LIGHT_COLOR;
+            const geom = new THREE.CylinderGeometry(LANE_WIDTH * 0.4, LANE_WIDTH * 0.4, 0.2, 16);
+            const mat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 2 });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.rotation.x = Math.PI / 2;
+            mesh.position.y = 0.5;
+            group.add(mesh);
+            
+            // Halo
+            const ringGeom = new THREE.RingGeometry(LANE_WIDTH * 0.4, LANE_WIDTH * 0.5, 16);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(ringGeom, ringMat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.1;
+            group.add(ring);
 
-            const lightGeom = new THREE.CylinderGeometry(LANE_WIDTH * 0.4, LANE_WIDTH * 0.4, 1.5, 16);
-            const lightMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 2 });
-            const light = new THREE.Mesh(lightGeom, lightMat);
-
-            light.position.y = 4;
-            light.castShadow = true;
-            lightGroup.add(light);
-
-            lightGroup.userData.box = new THREE.Box3().setFromObject(light);
-            lightGroup.userData.type = type;
-            lightGroup.userData.isLight = true;
-
-            return lightGroup;
+            group.userData.box = new THREE.Box3().setFromObject(mesh);
+            group.userData.type = type;
+            return group;
         }
 
-        // --- NEW: Creates a coin ---
         function createCoin() {
-            const coinGeom = new THREE.CylinderGeometry(0.7, 0.7, 0.2, 16);
-            const coinMat = new THREE.MeshStandardMaterial({
-                color: COIN_COLOR,
-                metalness: 0.8,
-                roughness: 0.3,
-                emissive: 0xaa8800,
-                emissiveIntensity: 0.5
-            });
+            const coinGeom = new THREE.CylinderGeometry(0.7, 0.7, 0.1, 16);
+            const coinMat = new THREE.MeshStandardMaterial({ color: COIN_COLOR, metalness: 1, roughness: 0.2, emissive: 0xaa8800, emissiveIntensity: 0.4 });
             const coin = new THREE.Mesh(coinGeom, coinMat);
-            coin.rotation.x = Math.PI / 2; // Lay flat
-
-            // The coin itself is the collision box
-            coin.userData.box = new THREE.Box3();
-
-            const coinGroup = new THREE.Group();
-            coinGroup.add(coin);
-            // We use the *group* to store the box for consistency
-            coinGroup.userData.box = new THREE.Box3().setFromObject(coin);
-
-            return coinGroup;
+            coin.rotation.x = Math.PI / 2;
+            
+            const group = new THREE.Group();
+            group.add(coin);
+            group.userData.box = new THREE.Box3().setFromObject(coin);
+            return group;
         }
 
-        function createTree() {
-            const tree = new THREE.Group();
-
-            const trunkHeight = randomFloat(4, 8);
-            const trunkGeom = new THREE.CylinderGeometry(0.5, 0.7, trunkHeight, 8);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: TREE_TRUNK_COLOR, roughness: 0.9 });
-            const trunk = new THREE.Mesh(trunkGeom, trunkMat);
-            trunk.position.y = trunkHeight / 2;
-            trunk.castShadow = true;
-            tree.add(trunk);
-
-            const leavesHeight = randomFloat(5, 10);
-            const leavesGeom = new THREE.ConeGeometry(randomFloat(2, 4), leavesHeight, 8);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: TREE_LEAVES_COLOR, roughness: 0.9 });
-            const leaves = new THREE.Mesh(leavesGeom, leavesMat);
-            leaves.position.y = trunkHeight + leavesHeight / 2 - 1;
-            leaves.castShadow = true;
-            tree.add(leaves);
-
-            return tree;
+        function createParticle(pos, color) {
+            const geom = new THREE.SphereGeometry(0.2, 4, 4);
+            const mat = new THREE.MeshBasicMaterial({ color: color });
+            const p = new THREE.Mesh(geom, mat);
+            p.position.copy(pos);
+            p.userData.vel = new THREE.Vector3(randomFloat(-1, 1), randomFloat(1, 3), randomFloat(-1, 1));
+            p.userData.life = 1.0;
+            scene.add(p);
+            particles.push(p);
         }
 
-        function createBuilding() {
-            const height = randomFloat(10, 40);
-            const width = randomFloat(8, 15);
-            const depth = randomFloat(8, 15);
-            const geom = new THREE.BoxGeometry(width, height, depth);
-            const color = BUILDING_COLORS[random(0, BUILDING_COLORS.length - 1)];
-            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.8 });
-            const building = new THREE.Mesh(geom, mat);
-            building.position.y = height / 2;
-            building.castShadow = true;
-            building.receiveShadow = true;
-            return building;
-        }
-
-        /** --- NEW: Creates a street light --- */
-        function createStreetLight() {
-            const lightGroup = new THREE.Group();
-            const poleMat = new THREE.MeshStandardMaterial({ color: STREET_POLE_COLOR, roughness: 0.7 });
-
-            // Pole
-            const poleHeight = 10;
-            const poleGeom = new THREE.CylinderGeometry(0.2, 0.2, poleHeight, 8);
-            const pole = new THREE.Mesh(poleGeom, poleMat);
-            pole.position.y = poleHeight / 2;
-            pole.castShadow = true;
-            lightGroup.add(pole);
-
-            // Arm
-            const armGeom = new THREE.BoxGeometry(3, 0.2, 0.2);
-            const arm = new THREE.Mesh(armGeom, poleMat);
-            arm.position.set(1.5, poleHeight - 0.5, 0);
-            arm.castShadow = true;
-            lightGroup.add(arm);
-
-            // Lamp Head
-            const lampGeom = new THREE.BoxGeometry(0.6, 0.4, 0.6);
-            const lampMat = new THREE.MeshStandardMaterial({ color: STREET_LIGHT_COLOR, emissive: STREET_LIGHT_COLOR, emissiveIntensity: 2 });
-            const lamp = new THREE.Mesh(lampGeom, lampMat);
-            lamp.position.set(2.8, poleHeight - 0.5, 0);
-            lightGroup.add(lamp);
-
-            // The actual light source
-            const spotLight = new THREE.SpotLight(0xfffadd, 2.0, 30, Math.PI * 0.4, 0.5);
-            spotLight.position.set(2.8, poleHeight - 0.8, 0);
-            spotLight.target.position.set(2.8, 0, 0);
-            spotLight.castShadow = true;
-
-            // Add target to the group so it moves with the light
-            lightGroup.add(spotLight);
-            lightGroup.add(spotLight.target);
-
-            return lightGroup;
-        }
-
-
-        // --- Game Update Logic ---
+        // --- Updates ---
         function updatePlayer() {
-            // Smoothly interpolate player's X position to the target lane
-            playerCar.position.x += (playerTargetX - playerCar.position.x) * 0.15; // <-- CHANGED
-
-            // --- ADDED: Car Tilt ---
-            const targetTilt = (playerTargetX - playerCar.position.x) * -0.05; // Tilt into the turn
-            // Smoothly interpolate rotation
-            playerCar.rotation.z += (targetTilt - playerCar.rotation.z) * 0.1;
-
-            // Update the collision box to follow the player's body
-            const body = playerCar.children[0]; // Child 0 is the chassis
-            playerCar.userData.box.setFromObject(body);
+            playerCar.position.x += (playerTargetX - playerCar.position.x) * 0.15;
+            playerCar.rotation.z = (playerTargetX - playerCar.position.x) * -0.05; // Tilt
+            playerCar.userData.box.setFromObject(playerCar.children[0]);
         }
 
-        function updateRoadLines(currentSpeed) {
+        function updateRoadLines(speed) {
             roadLines.forEach(line => {
-                line.position.z += currentSpeed;
-                // Wrap lines around for infinite road effect
-                if (line.position.z > DESPAWN_Z_POSITION) {
-                    line.position.z -= ROAD_LENGTH * 4;
-                }
+                line.position.z += speed;
+                if (line.position.z > DESPAWN_Z_POSITION) line.position.z -= ROAD_LENGTH * 4;
             });
         }
 
-        function updateObstacles(currentSpeed) {
-            // Update combo timer
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.position.add(p.userData.vel);
+                p.userData.vel.y -= 0.1; // Gravity
+                p.userData.life -= 0.03;
+                p.scale.setScalar(p.userData.life);
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function updateGameObjects(speed) {
+            // Combo timer
             if (comboTimer > 0) {
                 comboTimer--;
                 if (comboTimer === 0) {
@@ -770,204 +658,174 @@
                 }
             }
 
-            // --- Update Enemies ---
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                const enemy = enemies[i];
-                enemy.mesh.position.z += currentSpeed;
-
-                // Update collision box
-                const body = enemy.mesh.children[0]; // Child 0 is the chassis
-                enemy.mesh.userData.box.setFromObject(body);
-
-                // Check for collision with player
-                if (checkCollision(playerCar, enemy.mesh)) {
-                    endGame();
-                    return; // Stop processing obstacles this frame
+            // Scenery
+            for (let i = scenery.length - 1; i >= 0; i--) {
+                let s = scenery[i];
+                s.mesh.position.z += speed;
+                if (s.mesh.position.z > DESPAWN_Z_POSITION) {
+                    scene.remove(s.mesh);
+                    scenery.splice(i, 1);
                 }
+            }
 
-                // Check for despawning (off-screen)
-                if (enemy.mesh.position.z > DESPAWN_Z_POSITION) {
-                    // Check for near miss
-                    const nearMiss = Math.abs(playerLane - enemy.lane) <= 1;
-                    if (nearMiss && enemy.mesh.position.z < DESPAWN_Z_POSITION + 5) { // Check just as it passes
-                        combo++;
-                        maxCombo = Math.max(maxCombo, combo);
-                        comboTimer = 180; // 3 seconds at 60fps
-                        const bonusScore = 10 + (combo * 5);
-                        score += bonusScore;
+            // Enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                e.mesh.position.z += speed;
+                e.mesh.userData.box.setFromObject(e.mesh.children[0]);
 
-                        comboDisplayEl.classList.remove('hidden');
-                        comboValueEl.textContent = combo;
-                        comboDisplayEl.classList.add('pulse-animation');
-                        setTimeout(() => comboDisplayEl.classList.remove('pulse-animation'), 500);
+                if (checkCollision(playerCar, e.mesh)) return endGame();
 
-                        // Spawn combo particles
-                        for (let j = 0; j < 3; j++) {
-                            createParticle(enemy.mesh.position.clone(), 0xffd700); // Gold
-                        }
-                    } else {
-                        // Standard score for dodging
-                        score += 10;
-                    }
-
-                    scene.remove(enemy.mesh);
+                if (e.mesh.position.z > DESPAWN_Z_POSITION) {
+                    // Score & Near Miss
+                    score += 10;
+                    scene.remove(e.mesh);
                     enemies.splice(i, 1);
                 }
             }
 
-            // --- Update Ambulances ---
+            // Ambulances
             for (let i = ambulances.length - 1; i >= 0; i--) {
-                const ambu = ambulances[i];
-                ambu.mesh.position.z += currentSpeed * 1.5; // Ambulances are faster
-                const body = ambu.mesh.children[0]; // Child 0 is the chassis
-                ambu.mesh.userData.box.setFromObject(body);
+                let a = ambulances[i];
+                a.mesh.position.z += speed * 1.5;
+                a.mesh.userData.box.setFromObject(a.mesh.children[0]);
+                a.mesh.userData.flashingLight.visible = Math.floor(Date.now() / 150) % 2 === 0;
 
-                // Animate flashing light
-                ambu.mesh.userData.flashingLight.visible = Math.floor(Date.now() / 200) % 2 === 0;
-
-                if (checkCollision(playerCar, ambu.mesh)) {
-                    endGame();
-                    return;
-                }
-
-                if (ambu.mesh.position.z > DESPAWN_Z_POSITION) {
-                    scene.remove(ambu.mesh);
+                if (checkCollision(playerCar, a.mesh)) return endGame();
+                if (a.mesh.position.z > DESPAWN_Z_POSITION) {
+                    scene.remove(a.mesh);
                     ambulances.splice(i, 1);
-                    score += 30 + (combo * 10); // Bonus for dodging fast ambulance
-
-                    for (let j = 0; j < 8; j++) {
-                        createParticle(ambu.mesh.position.clone(), 0x00ff00); // Green
-                    }
                 }
             }
 
-            // --- Update Traffic Lights ---
+            // Traffic Lights
             for (let i = trafficLights.length - 1; i >= 0; i--) {
-                const light = trafficLights[i];
-                light.mesh.position.z += currentSpeed;
-                light.mesh.userData.box.setFromObject(light.mesh.children[0]);
+                let t = trafficLights[i];
+                t.mesh.position.z += speed;
+                t.mesh.userData.box.setFromObject(t.mesh.children[0]);
 
-                if (checkCollision(playerCar, light.mesh)) {
-                    if (light.type === 'GREEN') {
-                        // Collect green light for bonus
-                        score += 100 + (combo * 20);
-                        combo += 3;
-                        maxCombo = Math.max(maxCombo, combo);
+                if (checkCollision(playerCar, t.mesh)) {
+                    if (t.type === 'GREEN') {
+                        score += 50;
+                        combo++;
                         comboTimer = 180;
                         comboDisplayEl.classList.remove('hidden');
                         comboValueEl.textContent = combo;
-
-                        for (let j = 0; j < 15; j++) {
-                            createParticle(light.mesh.position.clone(), 0x00ff00); // Green
-                        }
-
-                        scene.remove(light.mesh);
+                        scene.remove(t.mesh);
                         trafficLights.splice(i, 1);
+                        spawnExplosion(t.mesh.position, GREEN_LIGHT_COLOR, 5);
                     } else {
-                        // Hit red light
-                        endGame();
-                        return;
+                        return endGame();
                     }
-                }
-
-                if (light.mesh.position.z > DESPAWN_Z_POSITION) {
-                    scene.remove(light.mesh);
+                } else if (t.mesh.position.z > DESPAWN_Z_POSITION) {
+                    scene.remove(t.mesh);
                     trafficLights.splice(i, 1);
                 }
             }
 
-            // Update UI
-            scoreEl.textContent = score;
-            const speedMultiplier = isAccelerating ? 2.5 : (isBraking ? 0.4 : 1.0); // <-- CHANGED
-            speedDisplayEl.textContent = (gameSpeed / 0.3 * speedMultiplier).toFixed(1) + 'x'; // <-- CHANGED
-
-            // Increase game speed difficulty over time, but only when a multiple is *passed*
-            if (score > 0 && Math.floor(score / 500) > Math.floor((score - 10) / 500)) { // <-- CHANGED
-                gameSpeed = Math.min(gameSpeed + 0.02, 0.8); // Cap speed // <-- CHANGED
-            }
-        }
-
-        function updateScenery(currentSpeed) {
-            for (let i = scenery.length - 1; i >= 0; i--) {
-                const obj = scenery[i];
-                obj.position.z += currentSpeed;
-
-                if (obj.position.z > DESPAWN_Z_POSITION) {
-                    // Remove the group and all its children (lights, etc.)
-                    scene.remove(obj);
-                    scenery.splice(i, 1);
-                }
-            }
-        }
-
-        function checkCollision(objA, objB) {
-            // Simple Axis-Aligned Bounding Box (AABB) collision detection
-            if (objA.userData.box && objB.userData.box) {
-                return objA.userData.box.intersectsBox(objB.userData.box);
-            }
-            return false;
-        }
-
-        // --- NEW: Update Coins ---
-        function updateCoins(currentSpeed) {
+            // Coins
             for (let i = coins.length - 1; i >= 0; i--) {
-                const coin = coins[i];
-                coin.mesh.position.z += currentSpeed;
-                coin.mesh.rotation.y += 0.1; // Spin the coin
+                let c = coins[i];
+                c.mesh.position.z += speed;
+                c.mesh.rotation.y += 0.1;
+                c.mesh.userData.box.setFromObject(c.mesh.children[0]);
 
-                // Update collision box (using the group's box)
-                coin.mesh.userData.box.setFromCenterAndSize(
-                    coin.mesh.position,
-                    new THREE.Vector3(1.4, 1.4, 0.4) // A slightly larger, simpler box
-                );
-
-                // Check for collision with player
-                if (checkCollision(playerCar, coin.mesh)) {
-                    score += 25; // Add score for coin
-
-                    // Spawn particles
-                    for (let j = 0; j < 5; j++) {
-                        createParticle(coin.mesh.position.clone(), COIN_COLOR);
-                    }
-
-                    scene.remove(coin.mesh);
+                if (checkCollision(playerCar, c.mesh)) {
+                    score += 25;
+                    spawnExplosion(c.mesh.position, COIN_COLOR, 4);
+                    scene.remove(c.mesh);
                     coins.splice(i, 1);
-
-                } else if (coin.mesh.position.z > DESPAWN_Z_POSITION) {
-                    // Check for despawning (off-screen)
-                    scene.remove(coin.mesh);
+                } else if (c.mesh.position.z > DESPAWN_Z_POSITION) {
+                    scene.remove(c.mesh);
                     coins.splice(i, 1);
                 }
             }
         }
 
-        // --- Object Spawning ---
-        function spawnEnemy() {
-            const spawnChance = 0.008 + (gameSpeed - 0.2) * 0.02;
-            if (Math.random() < spawnChance) {
-                const lane = random(0, LANE_COUNT - 1);
-                // Check if lane is clear before spawning
-                const canSpawn = enemies.every(e => e.lane !== lane || e.mesh.position.z > lastSpawnZ + CAR_BODY_DEPTH * 4);
+        function checkCollision(a, b) {
+            return a.userData.box && b.userData.box && a.userData.box.intersectsBox(b.userData.box);
+        }
 
-                if (canSpawn) {
-                    const color = ENEMY_COLORS[random(0, ENEMY_COLORS.length - 1)];
-                    const mesh = createCar(color);
+        function spawnExplosion(pos, color, count) {
+            for (let i = 0; i < count; i++) createParticle(pos, color);
+        }
+
+        // --- Spawning Logic ---
+        function spawnSceneryRow(zPos) {
+             // Left Side
+             if (Math.random() > 0.3) {
+                 const type = Math.random();
+                 let mesh;
+                 let xPos = -ROAD_WIDTH/2 - 5 - randomFloat(0, 5);
+                 
+                 if (type < 0.2) { // Streetlight
+                     mesh = createStreetLight();
+                     xPos = -ROAD_WIDTH/2 - 2.5; // Closer to road
+                     mesh.rotation.y = -Math.PI / 2; // Face road
+                 } else if (type < 0.6) { // Tree
+                     mesh = createTree();
+                 } else { // Building
+                     mesh = createBuilding();
+                     xPos -= 10; // Further back
+                 }
+                 mesh.position.set(xPos, 0, zPos);
+                 scene.add(mesh);
+                 scenery.push({ mesh });
+             }
+             
+             // Right Side
+             if (Math.random() > 0.3) {
+                 const type = Math.random();
+                 let mesh;
+                 let xPos = ROAD_WIDTH/2 + 5 + randomFloat(0, 5);
+                 
+                 if (type < 0.2) { // Streetlight
+                     mesh = createStreetLight();
+                     xPos = ROAD_WIDTH/2 + 2.5;
+                     mesh.rotation.y = Math.PI / 2; // Face road
+                 } else if (type < 0.6) { // Tree
+                     mesh = createTree();
+                 } else { // Building
+                     mesh = createBuilding();
+                     xPos += 10;
+                 }
+                 mesh.position.set(xPos, 0, zPos);
+                 scene.add(mesh);
+                 scenery.push({ mesh });
+             }
+        }
+
+        function spawnObjects() {
+            // Spawn Scenery regularly based on distance traveled approximation
+            if (lastSpawnZ > SPAWN_Z_POSITION + 15) { 
+                // Using frames/speed to approx distance is tricky with variable speed.
+                // Instead, we just spawn randomly each frame but check logic
+            }
+            
+            // Just reuse spawn timer logic or random check
+            if (Math.random() < 0.05 + gameSpeed * 0.02) {
+                // Determine Z position based on the "furthest back" object to prevent gaps?
+                // For simplicity in this runner style, we spawn at fixed distance relative to world
+                // But since world moves (objects move +z), we spawn at fixed negative Z.
+                spawnSceneryRow(SPAWN_Z_POSITION);
+            }
+
+            // Enemies
+            if (Math.random() < 0.01 + gameSpeed * 0.01) {
+                const lane = random(0, LANE_COUNT - 1);
+                if (isLaneClear(lane)) {
+                    const mesh = createCar(ENEMY_COLORS[random(0, ENEMY_COLORS.length - 1)]);
                     mesh.position.set(laneToX(lane), 0, SPAWN_Z_POSITION);
                     enemies.push({ mesh, lane });
                     scene.add(mesh);
-                    lastSpawnZ = SPAWN_Z_POSITION; // Reset spawn timer
+                    lastSpawnZ = SPAWN_Z_POSITION;
                 }
             }
-        }
 
-        function spawnAmbulance() {
-            const spawnChance = 0.003 + (gameSpeed - 0.2) * 0.005;
-            if (Math.random() < spawnChance) {
+            // Ambulances
+            if (Math.random() < 0.002) {
                 const lane = random(0, LANE_COUNT - 1);
-                // Check if lane is clear
-                const canSpawn = ambulances.every(a => a.lane !== lane || a.mesh.position.z > lastSpawnZ + CAR_BODY_DEPTH * 10);
-
-                if (canSpawn) {
+                if (isLaneClear(lane)) {
                     const mesh = createAmbulance();
                     mesh.position.set(laneToX(lane), 0, SPAWN_Z_POSITION);
                     ambulances.push({ mesh, lane });
@@ -975,17 +833,12 @@
                     lastSpawnZ = SPAWN_Z_POSITION;
                 }
             }
-        }
 
-        function spawnTrafficLight() {
-            const spawnChance = 0.001 + (gameSpeed - 0.2) * 0.002;
-            if (Math.random() < spawnChance) {
+            // Lights
+            if (Math.random() < 0.005) {
                 const lane = random(0, LANE_COUNT - 1);
-                const type = (Math.random() < 0.6) ? 'GREEN' : 'RED'; // 60% green
-                // Check if lane is clear
-                const canSpawn = trafficLights.every(t => t.lane !== lane || t.mesh.position.z > lastSpawnZ + 50);
-
-                if (canSpawn) {
+                if (isLaneClear(lane)) {
+                    const type = Math.random() > 0.4 ? 'GREEN' : 'RED';
                     const mesh = createTrafficLight(type);
                     mesh.position.set(laneToX(lane), 0, SPAWN_Z_POSITION);
                     trafficLights.push({ mesh, lane, type });
@@ -993,395 +846,170 @@
                     lastSpawnZ = SPAWN_Z_POSITION;
                 }
             }
-        }
 
-        // --- NEW: Spawn Coins ---
-        function spawnCoin() {
-            const spawnChance = 0.015 + (gameSpeed - 0.3) * 0.02;
-            if (Math.random() < spawnChance) {
+            // Coins
+            if (Math.random() < 0.01) {
                 const lane = random(0, LANE_COUNT - 1);
-
-                // Check if lane is clear at spawn point
-                const canSpawn = enemies.every(e => e.lane !== lane || e.mesh.position.z > lastCoinSpawnZ + 50) &&
-                    ambulances.every(a => a.lane !== lane || a.mesh.position.z > lastCoinSpawnZ + 50) &&
-                    trafficLights.every(t => t.lane !== lane || t.mesh.position.z > lastCoinSpawnZ + 50);
-
-                if (canSpawn) {
-                    const trailLength = random(3, 8);
-                    for (let i = 0; i < trailLength; i++) {
+                if (isLaneClear(lane)) {
+                    for(let k=0; k<5; k++) {
                         const mesh = createCoin();
-                        const zPos = SPAWN_Z_POSITION - i * (CAR_BODY_DEPTH * 0.8); // Stagger coins
-                        mesh.position.set(laneToX(lane), 1.5, zPos); // Raise coins off ground
+                        mesh.position.set(laneToX(lane), 1, SPAWN_Z_POSITION - (k * 4));
                         coins.push({ mesh, lane });
                         scene.add(mesh);
                     }
-                    lastCoinSpawnZ = SPAWN_Z_POSITION - trailLength * CAR_BODY_DEPTH;
                 }
-            }
-            // Ensure coin spawn Z eventually resets if no coins spawn
-            if (lastCoinSpawnZ < SPAWN_Z_POSITION - 50) {
-                lastCoinSpawnZ += gameSpeed * 2;
             }
         }
 
-        function spawnScenery() {
-            const spawnChance = 0.01;
-            if (Math.random() < spawnChance) {
-                const isLeft = Math.random() < 0.5;
-                const zPos = SPAWN_Z_POSITION - randomFloat(0, 50);
-
-                let obj;
-                let xPos;
-
-                const randType = Math.random();
-                if (randType < 0.4) {
-                    // Street Light (close to road)
-                    obj = createStreetLight();
-                    xPos = (ROAD_WIDTH / 2 + 3) * (isLeft ? -1 : 1);
-                    if (!isLeft) {
-                        // Rotate light to face the road
-                        obj.rotation.y = Math.PI;
-                    }
-                } else if (randType < 0.7) {
-                    // Tree (medium distance)
-                    obj = createTree();
-                    xPos = (ROAD_WIDTH / 2 + randomFloat(5, 10)) * (isLeft ? -1 : 1);
-                } else {
-                    // Building (far distance)
-                    obj = createBuilding();
-                    xPos = (ROAD_WIDTH / 2 + randomFloat(15, 30)) * (isLeft ? -1 : 1);
-                }
-
-                obj.position.set(xPos, 0, zPos);
-                scenery.push(obj);
-                scene.add(obj);
-            }
+        function isLaneClear(lane) {
+            const allObjs = [...enemies, ...ambulances, ...trafficLights];
+            return allObjs.every(o => o.lane !== lane || o.mesh.position.z > lastSpawnZ + 30);
         }
 
-        // --- Game Over ---
         function endGame() {
-            if (gameOver) return; // Prevent calling multiple times
+            if (gameOver) return;
             gameOver = true;
-            cancelAnimationFrame(animationFrameId); // Stop the game loop
+            cancelAnimationFrame(animationFrameId);
+            
+            spawnExplosion(playerCar.position, 0xff5500, 30);
+            scene.remove(playerCar);
+            updateParticles(); // One last update for explosion
 
-            // Create explosion effect
-            for (let i = 0; i < 30; i++) {
-                createParticle(playerCar.position, PLAYER_COLOR);
-                createParticle(playerCar.position, 0xffa500); // Orange
-            }
-
-            scene.remove(playerCar); // Hide player car
-
-            // Show game over modal
             finalScoreEl.textContent = score;
             finalComboEl.textContent = maxCombo;
             modalEl.classList.remove('hidden');
-            // Timeout to allow CSS transition to play
-            setTimeout(() => {
-                modalEl.querySelector('div').classList.remove('scale-90');
-                modalEl.querySelector('div').classList.add('scale-100');
-            }, 50);
         }
 
-        // --- Main Game Loop ---
         function animate() {
-            animationFrameId = requestAnimationFrame(animate); // Keep the loop running
+            animationFrameId = requestAnimationFrame(animate);
 
             if (!gameOver) {
-                // Calculate current speed
-                let speedMultiplier = 1.0;
-                if (isAccelerating) speedMultiplier = 2.5; // <-- CHANGED
-                if (isBraking) speedMultiplier = 0.4; // <-- CHANGED
-                const currentSpeed = gameSpeed * speedMultiplier;
+                let speedMult = isAccelerating ? 2.0 : (isBraking ? 0.5 : 1.0);
+                let currentSpeed = gameSpeed * speedMult;
 
-                // Update Game Logic
                 updatePlayer();
                 updateRoadLines(currentSpeed);
-                updateObstacles(currentSpeed);
-                updateCoins(currentSpeed); // <-- ADDED
-                updateScenery(currentSpeed);
+                updateGameObjects(currentSpeed);
                 updateParticles();
+                spawnObjects();
 
-                // Spawn new objects
-                spawnEnemy();
-                spawnAmbulance();
-                spawnTrafficLight();
-                spawnCoin(); // <-- ADDED
-                spawnScenery();
+                // UI Updates
+                scoreEl.textContent = score;
+                speedDisplayEl.textContent = (currentSpeed * 3).toFixed(1) + 'x';
+                gameSpeed = Math.min(gameSpeed + 0.0001, 1.0); // Slow accel
+                
+                // Dynamic FOV
+                const targetFOV = isAccelerating ? 85 : 75;
+                camera.fov += (targetFOV - camera.fov) * 0.05;
+                camera.updateProjectionMatrix();
+
+                renderer.render(scene, camera);
             } else {
-                // Keep updating particles even after game over for explosion
-                updateParticles();
+                 renderer.render(scene, camera);
             }
-
-            // --- ADDED: Camera FOV effect ---
-            const targetFOV = isAccelerating ? 80 : (isBraking ? 70 : 75);
-            camera.fov += (targetFOV - camera.fov) * 0.05;
-            camera.updateProjectionMatrix();
-
-            // Render the scene
-            renderer.render(scene, camera);
         }
 
-        // --- Event Handlers ---
+        // --- Controls ---
+        function movePlayer(dir) {
+            playerLane = Math.max(0, Math.min(LANE_COUNT - 1, playerLane + dir));
+            playerTargetX = laneToX(playerLane);
+        }
+
+        function updateCanvasSize() {
+             if (window.innerWidth < 768 && window.innerHeight > window.innerWidth) {
+                CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.95);
+                CANVAS_HEIGHT = Math.min(500, window.innerHeight * 0.5);
+            } else {
+                CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.9);
+                CANVAS_HEIGHT = Math.min(600, window.innerHeight * 0.6);
+            }
+            if(canvas) { canvas.width = CANVAS_WIDTH; canvas.height = CANVAS_HEIGHT; }
+            if(camera) { camera.aspect = CANVAS_WIDTH / CANVAS_HEIGHT; camera.updateProjectionMatrix(); }
+            if(renderer) { renderer.setSize(CANVAS_WIDTH, CANVAS_HEIGHT); }
+        }
+
         function addEventListeners() {
-            // Keyboard
-            window.addEventListener('keydown', handleKeyDown);
-            window.addEventListener('keyup', handleKeyUp);
+            window.addEventListener('resize', updateCanvasSize);
+            window.addEventListener('keydown', e => {
+                if(gameOver) return;
+                if(e.key === 'ArrowLeft' || e.key === 'a') movePlayer(-1);
+                if(e.key === 'ArrowRight' || e.key === 'd') movePlayer(1);
+                if(e.key === 'ArrowUp' || e.key === 'w') isAccelerating = true;
+                if(e.key === 'ArrowDown' || e.key === 's') isBraking = true;
+            });
+            window.addEventListener('keyup', e => {
+                if(e.key === 'ArrowUp' || e.key === 'w') isAccelerating = false;
+                if(e.key === 'ArrowDown' || e.key === 's') isBraking = false;
+            });
 
-            // Mobile Buttons
-            const triggerHaptic = (style = 'medium') => {
-                if (navigator.vibrate) {
-                    // Simple pattern for feedback
-                    navigator.vibrate(style === 'heavy' ? 30 : 10);
-                }
+            // Touch
+            const handleBtn = (el, start, end) => {
+                if(!el) return;
+                el.addEventListener('touchstart', e => { e.preventDefault(); start(); el.classList.add('active'); }, {passive:false});
+                el.addEventListener('touchend', e => { e.preventDefault(); end(); el.classList.remove('active'); });
+                el.addEventListener('mousedown', e => { start(); el.classList.add('active'); });
+                el.addEventListener('mouseup', e => { end(); el.classList.remove('active'); });
+                el.addEventListener('mouseleave', e => { end(); el.classList.remove('active'); });
             };
+            handleBtn(btnGas, () => isAccelerating = true, () => isAccelerating = false);
+            handleBtn(btnBrake, () => isBraking = true, () => isBraking = false);
+            restartButton.addEventListener('click', resetGame);
 
-            const attachBtnEvents = (btn, startAction, endAction) => {
-                if (!btn) return;
-                btn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    startAction();
-                    btn.classList.add('active');
-                    triggerHaptic('heavy');
-                }, { passive: false });
-                btn.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    endAction();
-                    btn.classList.remove('active');
-                });
-                // Mouse
-                btn.addEventListener('mousedown', (e) => {
-                    startAction();
-                    btn.classList.add('active');
-                });
-                btn.addEventListener('mouseup', (e) => {
-                    endAction();
-                    btn.classList.remove('active');
-                });
-                btn.addEventListener('mouseleave', (e) => {
-                    endAction();
-                    btn.classList.remove('active');
-                });
-                attachBtnEvents(btnGas, () => isAccelerating = true, () => isAccelerating = false);
-                attachBtnEvents(btnBrake, () => isBraking = true, () => isBraking = false);
-
-                // Steering Wheel Logic - Tilt (Gyroscope)
-                if (steeringContainer && steeringWheel) {
-
-                    // Add a text hint to the wheel
-                    const hint = document.createElement('div');
-                    hint.innerText = "TAP TO ENABLE TILT";
-                    hint.style.position = 'absolute';
-                    hint.style.width = '100%';
-                    hint.style.textAlign = 'center';
-                    hint.style.color = 'white';
-                    hint.style.fontWeight = 'bold';
-                    hint.style.fontSize = '12px';
-                    hint.style.textShadow = '0 1px 2px black';
-                    hint.style.pointerEvents = 'none';
-                    steeringContainer.appendChild(hint);
-
-                    const requestTiltPermission = async () => {
-                        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                            try {
-                                const response = await DeviceOrientationEvent.requestPermission();
-                                if (response === 'granted') {
-                                    enableTilt();
-                                } else {
-                                    alert('Tilt permission denied.');
-                                }
-                            } catch (e) {
-                                console.error(e);
-                            }
-                        } else {
-                            // Non-iOS 13+ devices
-                            enableTilt();
-                        }
-                    };
-
-                    const enableTilt = () => {
-                        tiltEnabled = true;
-                        hint.style.display = 'none'; // Hide hint
-                        window.addEventListener('deviceorientation', handleOrientation);
-                        triggerHaptic('success');
-                    };
-
-                    const handleOrientation = (e) => {
-                        if (!tiltEnabled) return;
-
-                        // Gamma is usually left-to-right tilt in landscape (approx -90 to 90)
-                        // Beta might be used in portrait, but game is landscape-ish?
-                        // Let's assume landscape or standard holding position.
-                        // We check Gamma first.
-
-                        let angle = e.gamma;
-
-                        // Simple constraints and deadzone
-                        // Deadzone: +/- 5 degrees
-                        // Max Lock: +/- 45 degrees
-
-                        if (!angle) return; // Sometimes null on desktop
-
-                        // Smooth visual rotation
-                        currentTilt = currentTilt * 0.7 + angle * 0.3; // Simple lerp
-
-                        // Visual Limit
-                        const displayAngle = Math.max(-90, Math.min(90, currentTilt));
-                        steeringWheel.style.transform = `rotate(${displayAngle}deg)`;
-
-
-                        // Logic Threshold
-                        const TURN_THRESHOLD = 15;
-                        const RESET_THRESHOLD = 5;
-
-                        if (!hasTriggeredTurn) {
-                            if (currentTilt < -TURN_THRESHOLD) {
-                                movePlayer(-1);
-                                triggerHaptic('medium');
-                                hasTriggeredTurn = true;
-                            } else if (currentTilt > TURN_THRESHOLD) {
-                                movePlayer(1);
-                                triggerHaptic('medium');
-                                hasTriggeredTurn = true;
-                            }
-                        } else {
-                            // Reset trigger if user brings wheel back to center
-                            if (Math.abs(currentTilt) < RESET_THRESHOLD) {
-                                hasTriggeredTurn = false;
-                            }
-                        }
-                    };
-
-                    // Remove old drag listeners if any, add simple tap handler for permission
-                    steeringContainer.addEventListener('click', requestTiltPermission);
-                    steeringContainer.addEventListener('touchstart', (e) => {
-                        // Just consume the event so it doesn't pass through
-                        // but click handles the permission logic
-                    }, { passive: false });
-                }
-
-                // Touch Controls (Swiping) - Keep as fallback
-                window.addEventListener('touchstart', handleTouchStart, { passive: false });
-                window.addEventListener('touchmove', handleTouchMove, { passive: false });
-                window.addEventListener('touchend', handleTouchEnd);
-
-                // Restart Button
-                restartButton.addEventListener('click', resetGame);
-
-                // Window Resize
-                window.addEventListener('resize', handleResize);
-            }
-
-            function handleKeyDown(e) {
-                if (gameOver) return;
-                switch (e.key) {
-                    case 'ArrowLeft':
-                    case 'a':
-                        movePlayer(-1);
-                        break;
-                    case 'ArrowRight':
-                    case 'd':
-                        movePlayer(1);
-                        break;
-                    case 'ArrowUp':
-                    case 'w':
-                        isAccelerating = true;
-                        break;
-                    case 'ArrowDown':
-                    case 's':
-                        isBraking = true;
-                        break;
-                }
-            }
-
-            function handleKeyUp(e) {
-                switch (e.key) {
-                    case 'ArrowUp':
-                    case 'w':
-                        isAccelerating = false;
-                        break;
-                    case 'ArrowDown':
-                    case 's':
-                        isBraking = false;
-                        break;
-                }
-            }
-
-            function movePlayer(direction) {
-                playerLane = Math.max(0, Math.min(LANE_COUNT - 1, playerLane + direction));
-                playerTargetX = laneToX(playerLane);
-            }
-
-            function handleTouchStart(e) {
-                // Only track swipes if NOT touching controls
-                // Check if target is inside mobileControls
-                if (e.target.closest && e.target.closest('#mobileControls')) {
-                    return;
-                }
+            // Swipe
+            window.addEventListener('touchstart', e => {
+                if (e.target.closest('#mobileControls')) return;
                 touchStartX = e.touches[0].clientX;
-            }
-
-            function handleTouchMove(e) {
-                if (touchStartX === 0) return;
-                touchEndX = e.touches[0].clientX;
-            }
-
-            function handleTouchEnd() {
-                if (gameOver || touchStartX === 0) {
-                    touchStartX = 0;
-                    touchEndX = 0;
-                    return;
-                }
-
+            }, {passive:false});
+            
+            window.addEventListener('touchend', e => {
+                if (gameOver || touchStartX === 0) return;
+                touchEndX = e.changedTouches[0].clientX;
                 const diff = touchEndX - touchStartX;
-
-                if (diff > SWIPE_THRESHOLD) {
-                    // Swipe Right
-                    movePlayer(1);
-                } else if (diff < -SWIPE_THRESHOLD) {
-                    // Swipe Left
-                    movePlayer(-1);
+                if (Math.abs(diff) > SWIPE_THRESHOLD) {
+                    movePlayer(diff > 0 ? 1 : -1);
                 }
-
-                // Reset for next swipe
                 touchStartX = 0;
-                touchEndX = 0;
+            });
+            
+            // Tilt Hint
+            if(steeringContainer) {
+                const hint = document.createElement('div');
+                hint.innerText = "TAP TO ENABLE TILT";
+                hint.style.cssText = "position:absolute; width:100%; text-align:center; font-size:10px; font-weight:bold; color:white; pointer-events:none;";
+                steeringContainer.appendChild(hint);
+                
+                steeringContainer.addEventListener('click', async () => {
+                    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                        try {
+                            const resp = await DeviceOrientationEvent.requestPermission();
+                            if(resp === 'granted') enableTilt(hint);
+                        } catch(e) { console.error(e); }
+                    } else {
+                        enableTilt(hint);
+                    }
+                });
             }
-
-            function updateCanvasSize() {
-                // Prioritize smaller canvas on tall/narrow mobile screens
-                if (window.innerWidth < 768 && window.innerHeight > window.innerWidth) {
-                    CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.95);
-                    CANVAS_HEIGHT = Math.min(500, window.innerHeight * 0.5);
-                } else {
-                    // Standard logic for desktop or landscape mobile
-                    CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.9);
-                    CANVAS_HEIGHT = Math.min(600, window.innerHeight * 0.6);
-                }
-
-                if (canvas) {
-                    canvas.width = CANVAS_WIDTH;
-                    canvas.height = CANVAS_HEIGHT;
-                }
-            }
-
-            function handleResize() {
-                updateCanvasSize();
-
-                // Update camera aspect ratio and renderer size
-                if (camera && renderer) {
-                    camera.aspect = CANVAS_WIDTH / CANVAS_HEIGHT;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(CANVAS_WIDTH, CANVAS_HEIGHT);
-                }
-            }
-
         }
 
-        // --- Start the game ---
+        function enableTilt(hintEl) {
+            tiltEnabled = true;
+            if(hintEl) hintEl.style.display = 'none';
+            window.addEventListener('deviceorientation', e => {
+                if(!tiltEnabled || !e.gamma) return;
+                const angle = Math.max(-90, Math.min(90, e.gamma));
+                if(steeringWheel) steeringWheel.style.transform = `rotate(${angle}deg)`;
+                
+                if(!hasTriggeredTurn) {
+                    if(angle < -15) { movePlayer(-1); hasTriggeredTurn = true; }
+                    else if(angle > 15) { movePlayer(1); hasTriggeredTurn = true; }
+                } else if(Math.abs(angle) < 5) {
+                    hasTriggeredTurn = false;
+                }
+            });
+        }
+        
+        // Start
         init();
     </script>
-
 </body>
-
 </html>
