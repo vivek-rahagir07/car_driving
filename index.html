@@ -4,175 +4,533 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>City Driving: Night City</title>
+    <title>Neon Drive: Night City</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Arcade Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #bc13fe;
+            --neon-green: #0aff0a;
+            --neon-red: #ff003c;
+            --ui-bg: rgba(5, 10, 20, 0.85);
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Orbitron', sans-serif;
             margin: 0;
+            padding: 0;
             overflow: hidden;
-            touch-action: none;
-            background-color: #111827;
+            background-color: #050510;
+            color: white;
             user-select: none;
             -webkit-user-select: none;
+            width: 100vw;
+            height: 100vh;
         }
 
         #gameCanvas {
             display: block;
-            border-radius: 0.5rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            margin: 0 auto;
-        }
-
-        .game-button {
-            display: inline-block;
-            background-image: linear-gradient(to right, #3b82f6, #2563eb);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: all 0.2s ease-in-out;
-            border: none;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .game-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            background-image: linear-gradient(to right, #2563eb, #3b82f6);
-        }
-
-        /* Powerup & Status UI */
-        #statusContainer {
+            width: 100%;
+            height: 100%;
             position: absolute;
-            top: 70px;
-            right: 20px;
-            left: auto;
-            transform: none;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* --- CRT & Screen Effects --- */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.7;
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+            z-index: 49;
+        }
+
+        /* --- UI Layer & HUD --- */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        /* Angled HUD Boxes */
+        .hud-box {
+            background: var(--ui-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 10px 25px;
+            transform: skewX(-15deg);
+            position: relative;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+            min-width: 140px;
+            transition: all 0.3s ease;
+        }
+        
+        .hud-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .hud-box.right-align::before {
+            left: auto; right: 0;
+            background: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .hud-content {
+            transform: skewX(15deg); /* Correct text skew */
+            text-align: center;
+        }
+
+        .label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #8fa1b3;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            display: block;
+            line-height: 1;
+        }
+
+        /* Speedometer Bar */
+        .speed-bar-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .speed-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+            box-shadow: 0 0 10px var(--neon-blue);
+            transition: width 0.1s linear;
+        }
+
+        /* Powerup Stack */
+        #statusContainer {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             align-items: flex-end;
-            gap: 10px;
-            pointer-events: none;
-            z-index: 20;
         }
 
         .status-badge {
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 6px 12px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px 20px;
             color: white;
-            font-size: 0.8rem;
-            font-weight: bold;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 12px;
+            border-right: 4px solid #fff;
+            transform: translateX(150%);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            clip-path: polygon(15px 0, 100% 0, 100% 100%, 0% 100%);
+        }
+        
+        .status-active { transform: translateX(0); }
+        .shield-active { border-color: var(--neon-blue); color: var(--neon-blue); box-shadow: -10px 0 20px rgba(0, 243, 255, 0.2); }
+        .magnet-active { border-color: var(--neon-red); color: var(--neon-red); box-shadow: -10px 0 20px rgba(255, 0, 60, 0.2); }
+        .nitro-active { border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: -10px 0 20px rgba(188, 19, 254, 0.2); }
+
+        /* Start Screen Overlay */
+        #startScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 5, 10, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s;
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        #startScreen.fade-out {
             opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .title-glitch {
+            font-size: 4rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            position: relative;
+            text-shadow: 3px 3px 0px var(--neon-pink), -3px -3px 0px var(--neon-blue);
+            animation: glitch 2s infinite alternate;
+            margin-bottom: 2rem;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        @media (min-width: 768px) { .title-glitch { font-size: 6rem; } }
+
+        /* Interactive Button */
+        .cyber-btn {
+            background: transparent;
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 15px 50px;
+            border: 2px solid var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s;
+            clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+            pointer-events: auto;
+            z-index: 101;
+        }
+
+        .cyber-btn:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-blue);
+            transform: scale(1.05);
+        }
+
+        /* Countdown */
+        #countdownOverlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 80;
+            pointer-events: none;
+            display: none;
+        }
+        
+        .countdown-text {
+            font-size: 10rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 0 50px var(--neon-blue);
+            animation: pulseCount 0.9s ease-out;
+        }
+
+        @keyframes pulseCount {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Visual Keys (Desktop) */
+        .key-visuals {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            opacity: 0.5;
             transition: opacity 0.3s;
         }
         
-        .status-active { opacity: 1; }
-        .shield-active { border-color: #3b82f6; color: #93c5fd; }
-        .magnet-active { border-color: #ef4444; color: #fca5a5; }
+        body:hover .key-visuals { opacity: 0.8; }
 
-        /* Driving Tips UI */
-        #tipContainer {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            left: auto;
-            transform: none;
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 8px 16px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
+        .key-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .key-row { display: flex; gap: 5px; }
+
+        .key-box {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            pointer-events: none;
-            transition: opacity 0.5s;
-            z-index: 20;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1rem;
+            color: rgba(255,255,255,0.5);
+            background: rgba(0,0,0,0.5);
+            transition: all 0.1s;
         }
         
-        #tipIcon { font-size: 1.2rem; }
-        #tipText { font-size: 0.9rem; font-weight: 500; color: #e5e7eb; }
+        .key-box.active {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 15px var(--neon-blue);
+            transform: scale(0.95);
+        }
 
-        .touch-hint {
-            position: absolute;
-            bottom: 20px;
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
+        /* Game Over Modal */
+        #gameOverModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
             pointer-events: none;
-            text-transform: uppercase;
-            font-weight: bold;
+            transition: opacity 0.5s;
         }
-        .hint-left { left: 20px; }
-        .hint-right { right: 20px; }
 
-        @media (max-width: 768px) {
-            .desktop-hint { display: none; }
-            #tipContainer { top: 15px; right: 15px; width: auto; font-size: 0.8rem; padding: 6px 12px; }
-            #statusContainer { top: 60px; right: 15px; }
+        #gameOverModal.active {
+            opacity: 1;
+            pointer-events: auto;
         }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            text-align: center;
+        }
+
+        /* Animations */
+        @keyframes glitch {
+            0% { transform: translate(0,0) skew(0deg); text-shadow: 3px 3px 0px var(--neon-pink); }
+            20% { transform: translate(-3px, 3px) skew(-5deg); text-shadow: -3px 3px 0px var(--neon-blue); }
+            40% { transform: translate(-3px, -3px) skew(5deg); text-shadow: -3px -3px 0px var(--neon-pink); }
+            60% { transform: translate(3px, 3px) skew(-5deg); text-shadow: 3px 3px 0px var(--neon-blue); }
+            80% { transform: translate(3px, -3px) skew(5deg); text-shadow: 3px -3px 0px var(--neon-pink); }
+            100% { transform: translate(0,0) skew(0deg); text-shadow: -3px -3px 0px var(--neon-blue); }
+        }
+
+        .touch-zones {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            display: flex;
+            z-index: 20;
+        }
+        .zone { flex: 1; }
     </style>
 </head>
 
-<body class="bg-gray-900 min-h-screen flex flex-col items-center justify-center text-white p-4">
+<body class="bg-gray-900">
 
-    <h1 class="text-4xl md:text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 select-none">
-        City Driving
-    </h1>
+    <!-- Screen Effects -->
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
 
-    <div class="mb-2 flex gap-6 text-xl font-medium select-none">
-        <div>Score: <span id="score" class="font-bold text-yellow-300">0</span></div>
-        <div>Speed: <span id="speedDisplay" class="font-bold text-cyan-300">1.0x</span></div>
-        <div id="comboDisplay" class="font-bold text-green-400 hidden">Combo: <span id="comboValue">0</span>x</div>
-    </div>
-
-    <!-- Time UI -->
-    <div id="tipContainer">
-        <span id="tipIcon">☀️</span>
-        <span id="tipText">Day</span>
-    </div>
-
-    <!-- Powerup Status -->
-    <div id="statusContainer">
-        <div id="shieldBadge" class="status-badge shield-active">
-            <span>🛡️</span> SHIELD
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <h1 class="title-glitch">
+            NEON<br>RIDER
+        </h1>
+        <div class="text-gray-400 mb-8 font-rajdhani tracking-widest text-sm uppercase flex flex-col items-center gap-2">
+            <span>System Online</span>
+            <span class="text-xs text-gray-600">v.2.0.45</span>
         </div>
-        <div id="magnetBadge" class="status-badge magnet-active">
-            <span>🧲</span> MAGNET
+        <button id="startBtn" class="cyber-btn">
+            INITIALIZE
+        </button>
+        <p class="mt-8 text-xs text-gray-600 font-mono">
+            [WASD / ARROWS] to Drive &nbsp;|&nbsp; [TOUCH] L/R Sides
+        </p>
+    </div>
+
+    <!-- Countdown Overlay -->
+    <div id="countdownOverlay">
+        <div id="countdownText" class="countdown-text">3</div>
+    </div>
+
+    <!-- In-Game UI -->
+    <div id="ui-layer">
+        <!-- Header HUD -->
+        <div class="hud-header">
+            <!-- Left: Score -->
+            <div class="hud-box">
+                <div class="hud-content">
+                    <span class="label">Current Score</span>
+                    <span class="value text-yellow-400" id="score">0</span>
+                </div>
+            </div>
+
+            <!-- Center: Time (Decorative) -->
+            <div class="hidden md:flex flex-col items-center pt-2 opacity-70">
+                <div class="h-1 w-24 bg-gradient-to-r from-transparent via-blue-500 to-transparent mb-1"></div>
+                <span id="tipIcon" class="text-xl mb-1">☀️</span>
+                <span class="text-xs tracking-[0.3em] uppercase" id="tipText">DAY CYCLE</span>
+            </div>
+
+            <!-- Right: Speed/Best -->
+            <div class="flex gap-4">
+                <div class="hud-box right-align">
+                    <div class="hud-content">
+                        <span class="label">Best</span>
+                        <span class="value text-purple-400" id="highScore">0</span>
+                    </div>
+                </div>
+                <div class="hud-box right-align" style="min-width: 160px;">
+                    <div class="hud-content">
+                        <span class="label">Velocity</span>
+                        <div class="flex items-baseline justify-center gap-1">
+                            <span class="value text-cyan-400" id="speedDisplay">0</span>
+                            <span class="text-xs text-cyan-700">KM/H</span>
+                        </div>
+                        <div class="speed-bar-container">
+                            <div id="speedBar" class="speed-bar-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Powerup Status Stack -->
+        <div id="statusContainer">
+            <div id="shieldBadge" class="status-badge shield-active">
+                <span class="text-2xl">🛡️</span> 
+                <div>
+                    <div class="text-xs opacity-70 leading-none">SYSTEM</div>
+                    <div>SHIELD</div>
+                </div>
+            </div>
+            <div id="magnetBadge" class="status-badge magnet-active">
+                <span class="text-2xl">🧲</span>
+                <div>
+                    <div class="text-xs opacity-70 leading-none">FIELD</div>
+                    <div>MAGNET</div>
+                </div>
+            </div>
+            <div id="nitroBadge" class="status-badge nitro-active">
+                <span class="text-2xl">🚀</span>
+                <div>
+                    <div class="text-xs opacity-70 leading-none">BOOST</div>
+                    <div>NITRO</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Key Visuals (Desktop) -->
+        <div class="key-visuals hidden md:flex">
+            <div class="key-group">
+                <div class="key-box" id="keyW">W</div>
+                <div class="key-row">
+                    <div class="key-box" id="keyA">A</div>
+                    <div class="key-box" id="keyS">S</div>
+                    <div class="key-box" id="keyD">D</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Touch Zones (Invisible but hinted) -->
+        <div class="touch-zones md:hidden">
+            <div class="zone" id="leftZone"></div>
+            <div class="zone" id="rightZone"></div>
+        </div>
+        
+        <!-- Mobile Hints -->
+        <div class="absolute bottom-8 w-full flex justify-between px-8 text-xs font-bold text-gray-500 opacity-50 md:hidden pointer-events-none">
+            <span>[ HOLD ] BRAKE</span>
+            <span>GAS [ HOLD ]</span>
         </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
-    <div class="touch-hint hint-left md:hidden">Hold Left: Brake</div>
-    <div class="touch-hint hint-right md:hidden">Hold Right: Gas</div>
+    <!-- Game Over Modal -->
+    <div id="gameOverModal">
+        <div class="bg-gray-900 border border-gray-700 p-8 max-w-sm w-full relative overflow-hidden" style="clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);">
+            <!-- Decorative line -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-pink-500 to-purple-500"></div>
 
-    <p class="mt-4 text-gray-400 text-sm md:text-base text-center desktop-hint select-none">
-        Keys: Left/Right or A/D (Move), Up/W (Race), Down/S (Brake)
-    </p>
+            <h2 class="text-4xl font-black mb-2 text-center text-white tracking-widest uppercase">CRITICAL<br><span class="text-red-500">FAILURE</span></h2>
+            
+            <div class="stats-grid mt-8">
+                <div class="stat-card">
+                    <span class="label text-xs">Score</span>
+                    <span class="value text-2xl text-yellow-400" id="finalScore">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label text-xs">Best</span>
+                    <span class="value text-2xl text-purple-400" id="finalHighScore">0</span>
+                </div>
+            </div>
 
-    <div id="gameOverModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-white text-gray-900 p-8 md:p-12 rounded-lg shadow-2xl text-center transform scale-90 transition-all">
-            <h2 class="text-3xl font-bold mb-4">Game Over!</h2>
-            <p class="text-xl mb-2">
-                Final Score: <span id="finalScore" class="font-bold text-blue-600">0</span>
-            </p>
-            <p class="text-lg mb-6">
-                Max Combo: <span id="finalCombo" class="font-bold text-green-600">0</span>x
-            </p>
-            <button id="restartButton" class="game-button">
-                Play Again
+            <div id="newRecordMsg" class="hidden text-center text-green-400 font-bold mb-6 tracking-widest animate-pulse">
+                ★ NEW RECORD ESTABLISHED ★
+            </div>
+
+            <button id="restartButton" class="cyber-btn w-full" style="font-size: 1rem; padding: 12px;">
+                REBOOT SYSTEM
             </button>
         </div>
     </div>
@@ -239,14 +597,18 @@
                 osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now); osc.frequency.exponentialRampToValueAtTime(2000, now + 0.1);
                 gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
                 osc.start(now); osc.stop(now + 0.3);
-            } else if (type === 'break') {
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
-                gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now); osc.stop(now + 0.3);
             } else if (type === 'boost') {
                 osc.type = 'triangle'; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(600, now + 0.3);
                 gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
                 osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'nitro') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(800, now + 1.0);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.01, now + 1.0);
+                osc.start(now); osc.stop(now + 1.0);
+            } else if (type === 'break') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
             }
         }
 
@@ -254,16 +616,31 @@
         const canvas = document.getElementById('gameCanvas');
         const scoreEl = document.getElementById('score');
         const speedDisplayEl = document.getElementById('speedDisplay');
-        const comboDisplayEl = document.getElementById('comboDisplay');
-        const comboValueEl = document.getElementById('comboValue');
+        const speedBarEl = document.getElementById('speedBar');
+        const highScoreEl = document.getElementById('highScore');
+        
         const modalEl = document.getElementById('gameOverModal');
+        const startScreenEl = document.getElementById('startScreen');
+        const countdownOverlayEl = document.getElementById('countdownOverlay');
+        const countdownTextEl = document.getElementById('countdownText');
         const finalScoreEl = document.getElementById('finalScore');
-        const finalComboEl = document.getElementById('finalCombo');
+        const finalHighScoreEl = document.getElementById('finalHighScore');
+        const newRecordMsgEl = document.getElementById('newRecordMsg');
+        
         const restartButton = document.getElementById('restartButton');
+        const startButton = document.getElementById('startBtn');
+        
         const tipTextEl = document.getElementById('tipText');
         const tipIconEl = document.getElementById('tipIcon');
         const shieldBadge = document.getElementById('shieldBadge');
         const magnetBadge = document.getElementById('magnetBadge');
+        const nitroBadge = document.getElementById('nitroBadge');
+
+        // Keys
+        const keyW = document.getElementById('keyW');
+        const keyA = document.getElementById('keyA');
+        const keyS = document.getElementById('keyS');
+        const keyD = document.getElementById('keyD');
 
         // --- Constants ---
         const LANE_COUNT = 3; const LANE_WIDTH = 5; const ROAD_WIDTH = LANE_COUNT * LANE_WIDTH; const ROAD_LENGTH = 100;
@@ -275,17 +652,26 @@
         const PLAYER_COLOR = 0x3b82f6; const ROAD_COLOR = 0x34495e; const LINE_COLOR = 0xffffff;
         const TREE_TRUNK_COLOR = 0x5d4037; const TREE_LEAVES_COLOR = 0x2e7d32;
         const COIN_COLOR = 0xffd700; const SHIELD_COLOR = 0x06b6d4; const MAGNET_COLOR = 0xf43f5e;
+        const NITRO_COLOR = 0xa855f7; const SPIKE_COLOR = 0xef4444;
         
         // --- State ---
         let scene, camera, renderer;
         let playerCar, playerShieldMesh;
         let roadLines = [];
-        let enemies = [], ambulances = [], police = [], trafficLights = [], scenery = [], coins = [], powerups = [], particles = [];
+        let enemies = [], ambulances = [], police = [], trafficLights = [], scenery = [], coins = [], powerups = [], particles = [], spikes = [];
         let score = 0, gameSpeed = 0.3, gameOver = false, animationFrameId;
+        
+        // Safe LocalStorage Access
+        let highScore = 0;
+        try { highScore = parseInt(localStorage.getItem('neonRideHighScore')) || 0; } catch(e) {}
+
         let playerLane = 1, playerTargetX = 0, isAccelerating = false, isBraking = false;
         let combo = 0, maxCombo = 0, comboTimer = 0, lastSpawnZ = SPAWN_Z_POSITION;
         let hasShield = false, hasMagnet = false, magnetTimer = 0, invincibleTimer = 0;
+        let isFlying = false, flyTimer = 0;
         let CANVAS_WIDTH, CANVAS_HEIGHT, touchStartX = 0, touchEndX = 0;
+        let isGameRunning = false;
+        let isCountingDown = false;
 
         // Day/Night Cycle
         let timeOfDay = 0; // 0.0 to 1.0 (0=Noon, 0.5=Midnight)
@@ -385,6 +771,43 @@
             }
 
             addEventListeners();
+            highScoreEl.textContent = highScore;
+            
+            // Initial render
+            renderer.render(scene, camera);
+        }
+
+        function triggerCountdown() {
+            startScreenEl.classList.add('fade-out');
+            modalEl.classList.remove('active');
+            
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            startEngine();
+
+            isCountingDown = true;
+            countdownOverlayEl.style.display = 'flex';
+            
+            let count = 3;
+            countdownTextEl.innerText = count;
+            
+            const interval = setInterval(() => {
+                count--;
+                if(count > 0) {
+                    countdownTextEl.innerText = count;
+                    // Reset animation
+                    countdownTextEl.style.animation = 'none';
+                    countdownTextEl.offsetHeight; /* trigger reflow */
+                    countdownTextEl.style.animation = 'pulseCount 0.9s ease-out';
+                } else if (count === 0) {
+                    countdownTextEl.innerText = "GO!";
+                } else {
+                    clearInterval(interval);
+                    countdownOverlayEl.style.display = 'none';
+                    isCountingDown = false;
+                    isGameRunning = true;
+                }
+            }, 1000);
+
             resetGame();
         }
 
@@ -398,17 +821,20 @@
             lastSpawnZ = SPAWN_Z_POSITION;
             
             hasShield = false; hasMagnet = false; magnetTimer = 0; invincibleTimer = 0;
+            isFlying = false; flyTimer = 0;
+            
             shieldBadge.classList.remove('status-active');
             magnetBadge.classList.remove('status-active');
+            nitroBadge.classList.remove('status-active');
             
             timeOfDay = 0.8; // Start at morning/day
             
             if (playerCar) scene.remove(playerCar);
             if (playerShieldMesh) scene.remove(playerShieldMesh);
             
-            [...enemies, ...ambulances, ...police, ...trafficLights, ...scenery, ...coins, ...powerups].forEach(obj => scene.remove(obj.mesh));
+            [...enemies, ...ambulances, ...police, ...trafficLights, ...scenery, ...coins, ...powerups, ...spikes].forEach(obj => scene.remove(obj.mesh));
             particles.forEach(p => scene.remove(p));
-            enemies=[]; ambulances=[]; police=[]; trafficLights=[]; scenery=[]; coins=[]; powerups=[]; particles=[];
+            enemies=[]; ambulances=[]; police=[]; trafficLights=[]; scenery=[]; coins=[]; powerups=[]; particles=[]; spikes=[];
 
             for (let z = PLAYER_Z_POSITION; z > SPAWN_Z_POSITION * 1.5; z -= 15) spawnSceneryRow(z);
 
@@ -423,8 +849,9 @@
             playerShieldMesh.visible = false;
             scene.add(playerShieldMesh);
 
-            scoreEl.textContent = score; speedDisplayEl.textContent = '1.0x';
-            comboDisplayEl.classList.add('hidden'); modalEl.classList.add('hidden');
+            scoreEl.textContent = score; 
+            speedDisplayEl.textContent = '0.0';
+            speedBarEl.style.width = '0%';
             
             animate();
         }
@@ -444,7 +871,7 @@
 
             if (timeOfDay < 0.25) { 
                 // NIGHT (0.0 - 0.25)
-                stateLabel = "Night";
+                stateLabel = "NIGHT";
                 skyColor.setHex(0x050510); fogColor.setHex(0x050510);
                 sunColor.setHex(0x444488); // Moonlight
                 ambientInt = 0.2; sunInt = 0.2;
@@ -452,7 +879,7 @@
                 tipIconEl.textContent = "🌙";
             } else if (timeOfDay < 0.35) {
                 // DAWN (0.25 - 0.35)
-                stateLabel = "Dawn";
+                stateLabel = "DAWN";
                 const t = (timeOfDay - 0.25) * 10; // 0 to 1
                 skyColor.lerpColors(new THREE.Color(0x050510), new THREE.Color(0xffaa55), t);
                 fogColor.copy(skyColor);
@@ -462,7 +889,7 @@
                 tipIconEl.textContent = "🌅";
             } else if (timeOfDay < 0.75) {
                 // DAY (0.35 - 0.75)
-                stateLabel = "Day";
+                stateLabel = "DAY";
                 skyColor.setHex(0x87CEEB); fogColor.setHex(0x87CEEB);
                 sunColor.setHex(0xffffff);
                 ambientInt = 0.6; sunInt = 1.0;
@@ -470,7 +897,7 @@
                 tipIconEl.textContent = "☀️";
             } else if (timeOfDay < 0.85) {
                 // DUSK (0.75 - 0.85)
-                stateLabel = "Dusk";
+                stateLabel = "DUSK";
                 const t = (timeOfDay - 0.75) * 10;
                 skyColor.lerpColors(new THREE.Color(0x87CEEB), new THREE.Color(0x993355), t);
                 fogColor.copy(skyColor);
@@ -480,7 +907,7 @@
                 tipIconEl.textContent = "🌇";
             } else {
                 // NIGHT Transition (0.85 - 1.0)
-                stateLabel = "Night";
+                stateLabel = "NIGHT";
                 const t = (timeOfDay - 0.85) / 0.15;
                 skyColor.lerpColors(new THREE.Color(0x993355), new THREE.Color(0x050510), t);
                 fogColor.copy(skyColor);
@@ -512,6 +939,37 @@
         function updatePlayer() {
             playerCar.position.x += (playerTargetX - playerCar.position.x) * 0.15;
             playerCar.rotation.z = (playerTargetX - playerCar.position.x) * -0.05;
+
+            // Flying Logic
+            let targetY = 0;
+            let targetRotX = 0;
+            
+            if (flyTimer > 0) {
+                flyTimer--;
+                targetY = 5.0; // Fly height
+                targetRotX = -0.15; // Tilt up
+                if (flyTimer < 30) targetRotX = 0.1; // Tilt down for landing
+                
+                // Engine flame particles when flying
+                if(Math.random() > 0.5) {
+                    const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.5), new THREE.MeshBasicMaterial({color: 0x3b82f6, transparent: true, opacity: 1.0}));
+                    p.position.copy(playerCar.position);
+                    p.position.y += 1.0;
+                    p.position.z += 2.5; // Behind car
+                    p.userData.vel = new THREE.Vector3(randomFloat(-0.2, 0.2), randomFloat(-0.2, 0.2), 1.0);
+                    scene.add(p);
+                    particles.push(p);
+                }
+
+                if (flyTimer === 0) {
+                    isFlying = false;
+                    nitroBadge.classList.remove('status-active');
+                }
+            }
+            
+            playerCar.position.y += (targetY - playerCar.position.y) * 0.1;
+            playerCar.rotation.x = targetRotX;
+
             playerCar.userData.box.setFromObject(playerCar.children[0]);
         }
 
@@ -527,7 +985,7 @@
                 const p = particles[i];
                 p.position.add(p.userData.vel);
                 p.userData.vel.y -= 0.01;
-                p.material.opacity -= 0.02;
+                p.material.opacity -= 0.05; // Fade faster
                 if(p.material.opacity <= 0 || p.position.y < 0) {
                     scene.remove(p);
                     particles.splice(i,1);
@@ -552,9 +1010,22 @@
             scene.remove(playerCar);
             if(engineMasterGain) engineMasterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
 
-            finalScoreEl.textContent = score;
-            finalComboEl.textContent = maxCombo;
-            modalEl.classList.remove('hidden');
+            // High Score Logic
+            let newRecord = false;
+            if(score > highScore) {
+                highScore = Math.floor(score);
+                try { localStorage.setItem('neonRideHighScore', highScore); } catch(e){}
+                newRecord = true;
+            }
+
+            finalScoreEl.textContent = Math.floor(score);
+            finalHighScoreEl.textContent = highScore;
+            highScoreEl.textContent = highScore;
+            
+            if(newRecord) newRecordMsgEl.classList.remove('hidden');
+            else newRecordMsgEl.classList.add('hidden');
+
+            modalEl.classList.add('active');
             
             // Render one last frame to show explosion start
             renderer.render(scene, camera);
@@ -630,9 +1101,32 @@
         function createPowerup(type) { 
             const g=new THREE.Group(); 
             // FIXED: Raised spawn height to 1.5 to align with car chassis collision box
-            const m=new THREE.Mesh(type==='SHIELD'?new THREE.IcosahedronGeometry(0.6):new THREE.BoxGeometry(0.7,0.7,0.7), new THREE.MeshStandardMaterial({color:type==='SHIELD'?SHIELD_COLOR:MAGNET_COLOR, emissiveIntensity:0.5, emissive:type==='SHIELD'?SHIELD_COLOR:MAGNET_COLOR})); 
+            let col = MAGNET_COLOR;
+            if (type === 'SHIELD') col = SHIELD_COLOR;
+            if (type === 'NITRO') col = NITRO_COLOR;
+
+            const m=new THREE.Mesh(type==='SHIELD'?new THREE.IcosahedronGeometry(0.6):new THREE.BoxGeometry(0.7,0.7,0.7), new THREE.MeshStandardMaterial({color:col, emissiveIntensity:0.5, emissive:col})); 
             g.add(m); g.userData.box=new THREE.Box3().setFromObject(m); g.userData.type=type; return g; 
         }
+        function createSpike() {
+            const g = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({color: SPIKE_COLOR, metalness: 0.8, roughness: 0.2});
+            // Create a strip of spikes
+            for(let i=-1.5; i<=1.5; i+=1.0) {
+                const s = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.2, 8), mat);
+                s.position.x = i;
+                s.position.y = 0.6;
+                g.add(s);
+            }
+            // Base plate
+            const base = new THREE.Mesh(new THREE.BoxGeometry(4, 0.1, 1), new THREE.MeshStandardMaterial({color: 0x333333}));
+            base.position.y = 0.05;
+            g.add(base);
+            
+            g.userData.box = new THREE.Box3().setFromObject(g);
+            return g;
+        }
+
         function createCoin() { 
             const c=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.7,0.1,16), new THREE.MeshStandardMaterial({color:COIN_COLOR, emissive:0xaa8800})); 
             c.rotation.x=Math.PI/2; const g=new THREE.Group(); g.add(c); g.userData.box=new THREE.Box3().setFromObject(c); return g; 
@@ -640,7 +1134,6 @@
 
         // --- Core Loops ---
         function updateGameObjects(speed) {
-            if(comboTimer>0){comboTimer--; if(comboTimer===0){combo=0;comboDisplayEl.classList.add('hidden');}}
             scenery.forEach((s,i)=>{s.mesh.position.z+=speed; if(s.mesh.position.z>DESPAWN_Z_POSITION){scene.remove(s.mesh);scenery.splice(i,1);}});
             
             const updateObj = (list, type) => {
@@ -648,24 +1141,38 @@
                     let o = list[i]; 
                     o.mesh.position.z+=speed; 
                     
-                    // FIXED: Rotation animation for powerups
                     if(type==='POWERUP') { o.mesh.rotation.y += 0.05; o.mesh.rotation.x += 0.05; }
+                    if(type==='COIN') { o.mesh.rotation.y += 0.05; }
                     
                     o.mesh.updateMatrixWorld(); 
                     o.mesh.userData.box.setFromObject(o.mesh.children[0]);
                     
+                    // Magnet Logic
                     if(type==='COIN' && hasMagnet && o.mesh.position.z > -40 && o.mesh.position.z < 20) {
                         o.mesh.position.x += (playerCar.position.x - o.mesh.position.x)*0.2;
                         o.mesh.position.z += (playerCar.position.z - o.mesh.position.z)*0.2;
+                        o.mesh.position.y += (playerCar.position.y - o.mesh.position.y)*0.2; // Magnet pulls up to flying car too
                     }
+
                     if(checkCollision(playerCar, o.mesh)) {
-                        if(type==='ENEMY'||type==='POLICE') { if(!hasShield && invincibleTimer===0) endGame(); else { if(hasShield) {hasShield=false; shieldBadge.classList.remove('status-active'); playSound('break'); invincibleTimer=60;} scene.remove(o.mesh); list.splice(i,1); } }
+                        if(type==='ENEMY'||type==='POLICE'||type==='SPIKE') { 
+                            if(!hasShield && invincibleTimer===0) endGame(); 
+                            else { 
+                                if(hasShield) {hasShield=false; shieldBadge.classList.remove('status-active'); playSound('break'); invincibleTimer=60;} 
+                                scene.remove(o.mesh); list.splice(i,1); 
+                            } 
+                        }
                         else if(type==='COIN') { score+=25; playSound('coin'); scene.remove(o.mesh); list.splice(i,1); }
-                        else if(type==='POWERUP') { playSound('boost'); if(o.type==='SHIELD'){hasShield=true;shieldBadge.classList.add('status-active');}else{hasMagnet=true;magnetTimer=600;magnetBadge.classList.add('status-active');} scene.remove(o.mesh); list.splice(i,1); }
+                        else if(type==='POWERUP') { 
+                            if(o.type==='SHIELD'){ playSound('boost'); hasShield=true;shieldBadge.classList.add('status-active'); }
+                            else if(o.type==='NITRO'){ playSound('nitro'); isFlying=true; flyTimer=400; nitroBadge.classList.add('status-active'); }
+                            else{ playSound('boost'); hasMagnet=true;magnetTimer=600;magnetBadge.classList.add('status-active'); } 
+                            scene.remove(o.mesh); list.splice(i,1); 
+                        }
                     } else if(o.mesh.position.z>DESPAWN_Z_POSITION) { if(type==='ENEMY') score+=10; scene.remove(o.mesh); list.splice(i,1); }
                 }
             };
-            updateObj(enemies, 'ENEMY'); updateObj(police, 'POLICE'); updateObj(powerups, 'POWERUP'); updateObj(coins, 'COIN');
+            updateObj(enemies, 'ENEMY'); updateObj(police, 'POLICE'); updateObj(powerups, 'POWERUP'); updateObj(coins, 'COIN'); updateObj(spikes, 'SPIKE');
             
             // Magnet Timer
             if(hasMagnet) { magnetTimer--; if(magnetTimer<=0) {hasMagnet=false; magnetBadge.classList.remove('status-active');} }
@@ -693,6 +1200,16 @@
         
         function spawnObjects() {
             if(Math.random()<0.05) spawnSceneryRow(SPAWN_Z_POSITION);
+            
+            // Spikes (High spawn rate for difficulty)
+            if(Math.random()<0.008 && isLaneClear(1)) {
+                const lane=random(0,2);
+                if(isLaneClear(lane)) {
+                    const m=createSpike(); m.position.set(laneToX(lane),0,SPAWN_Z_POSITION);
+                    spikes.push({mesh:m, lane}); scene.add(m); lastSpawnZ=SPAWN_Z_POSITION;
+                }
+            }
+
             if(Math.random()<0.015 && isLaneClear(1)) {
                  const lane=random(0,2); 
                  if(isLaneClear(lane)) {
@@ -700,16 +1217,30 @@
                      enemies.push({mesh:m, lane}); scene.add(m); lastSpawnZ=SPAWN_Z_POSITION;
                  }
             }
-            if(Math.random()<0.01 && isLaneClear(1)) {
-                for(let k=0;k<5;k++){
-                    const l=random(0,2); const m=createCoin(); m.position.set(laneToX(l),1,SPAWN_Z_POSITION-k*4);
-                    coins.push({mesh:m,lane:l}); scene.add(m);
-                }
-            }
-            if(Math.random()<0.003) {
-                 const l=random(0,2); const t=Math.random()>0.5?'SHIELD':'MAGNET'; const m=createPowerup(t);
+            if(Math.random()<0.004) {
+                 const l=random(0,2); 
+                 const r=Math.random();
+                 let t='SHIELD';
+                 if(r<0.33) t='MAGNET';
+                 else if(r<0.66) t='NITRO';
+                 
+                 const m=createPowerup(t);
                  // FIXED: Spawn height Y=1.2 to prevent underground spawning
                  m.position.set(laneToX(l),1.2,SPAWN_Z_POSITION); powerups.push({mesh:m,lane:l,type:t}); scene.add(m); lastSpawnZ=SPAWN_Z_POSITION;
+            }
+
+            // Coins Logic
+            if(Math.random() < 0.1 && isLaneClear(1)) {
+                const lane = random(0, 2);
+                // If flying, 90% chance coins are in the sky. If driving, 5% chance (just to tease).
+                const isSky = isFlying ? (Math.random() < 0.9) : (Math.random() < 0.05);
+                const y = isSky ? 5.0 : 1.0; // Sky height vs Ground height
+                
+                const m = createCoin();
+                m.position.set(laneToX(lane), y, SPAWN_Z_POSITION);
+                coins.push({mesh:m, lane:lane});
+                scene.add(m);
+                lastSpawnZ = SPAWN_Z_POSITION;
             }
         }
         function isLaneClear(l) { return lastSpawnZ < SPAWN_Z_POSITION + 20; }
@@ -719,6 +1250,8 @@
         function animate() {
             animationFrameId = requestAnimationFrame(animate);
             if(!gameOver) {
+                if(isCountingDown) return; // Don't run game logic during countdown
+
                 let speedMult = isAccelerating?2.0:(isBraking?0.5:1.0);
                 let currentSpeed = gameSpeed*speedMult;
                 
@@ -730,8 +1263,14 @@
                 updateParticles(); // Add particle update
                 spawnObjects();
                 
-                scoreEl.textContent = score;
-                speedDisplayEl.textContent = (currentSpeed*3).toFixed(1)+'x';
+                scoreEl.textContent = Math.floor(score);
+                const displaySpeed = (currentSpeed * 200).toFixed(0);
+                speedDisplayEl.textContent = displaySpeed;
+                
+                // Update speed bar
+                const percentage = Math.min((currentSpeed / 2.0) * 100, 100);
+                speedBarEl.style.width = percentage + '%';
+
                 gameSpeed = Math.min(gameSpeed+0.0001, 1.0);
                 
                 camera.fov += ((isAccelerating?85:75)-camera.fov)*0.05;
@@ -746,24 +1285,60 @@
         // --- Input ---
         function movePlayer(d) { playerLane=Math.max(0,Math.min(2,playerLane+d)); playerTargetX=laneToX(playerLane); }
         function updateCanvasSize() { 
-            CANVAS_WIDTH=Math.min(600, window.innerWidth); CANVAS_HEIGHT=Math.min(600, window.innerHeight*0.7);
+            CANVAS_WIDTH=window.innerWidth; CANVAS_HEIGHT=window.innerHeight;
             canvas.width=CANVAS_WIDTH; canvas.height=CANVAS_HEIGHT;
             if(camera){camera.aspect=CANVAS_WIDTH/CANVAS_HEIGHT; camera.updateProjectionMatrix();}
             if(renderer)renderer.setSize(CANVAS_WIDTH,CANVAS_HEIGHT);
         }
         function addEventListeners() {
             window.addEventListener('resize', updateCanvasSize);
-            const resume=()=>{if(audioCtx.state==='suspended')audioCtx.resume(); if(!engineOsc1)startEngine();};
-            window.addEventListener('keydown', e=>{resume(); if(gameOver)return; 
+            
+            window.addEventListener('keydown', e=>{
+                if(!isGameRunning && (e.key === 'Enter' || e.key === ' ')) { triggerCountdown(); return; }
+                if(gameOver) return; 
+                
+                // Highlight keys
+                if(e.key === 'w' || e.key === 'ArrowUp') keyW?.classList.add('active');
+                if(e.key === 'a' || e.key === 'ArrowLeft') keyA?.classList.add('active');
+                if(e.key === 's' || e.key === 'ArrowDown') keyS?.classList.add('active');
+                if(e.key === 'd' || e.key === 'ArrowRight') keyD?.classList.add('active');
+
                 if(e.key==='a'||e.key==='ArrowLeft')movePlayer(-1); if(e.key==='d'||e.key==='ArrowRight')movePlayer(1);
                 if(e.key==='w'||e.key==='ArrowUp')isAccelerating=true; if(e.key==='s'||e.key==='ArrowDown')isBraking=true;
             });
             window.addEventListener('keyup', e=>{
+                if(e.key === 'w' || e.key === 'ArrowUp') keyW?.classList.remove('active');
+                if(e.key === 'a' || e.key === 'ArrowLeft') keyA?.classList.remove('active');
+                if(e.key === 's' || e.key === 'ArrowDown') keyS?.classList.remove('active');
+                if(e.key === 'd' || e.key === 'ArrowRight') keyD?.classList.remove('active');
+
                 if(e.key==='w'||e.key==='ArrowUp')isAccelerating=false; if(e.key==='s'||e.key==='ArrowDown')isBraking=false;
             });
-            restartButton.addEventListener('click', ()=>{resume(); resetGame();});
-            window.addEventListener('touchstart', e=>{resume(); if(e.target.closest('button'))return; touchStartX=e.touches[0].clientX; if(touchStartX>window.innerWidth/2)isAccelerating=true; else isBraking=true;}, {passive:false});
-            window.addEventListener('touchend', e=>{if(gameOver)return; const d=e.changedTouches[0].clientX-touchStartX; if(Math.abs(d)>30)movePlayer(d>0?1:-1); isAccelerating=false; isBraking=false;});
+            restartButton.addEventListener('click', ()=>{ triggerCountdown(); });
+            startButton.addEventListener('click', ()=>{ triggerCountdown(); });
+
+            // Mobile Touch Logic
+            const leftZone = document.getElementById('leftZone');
+            const rightZone = document.getElementById('rightZone');
+
+            // Steering via Swipe
+            window.addEventListener('touchstart', e=>{
+                if(gameOver) return;
+                touchStartX=e.touches[0].clientX; 
+            }, {passive:false});
+            
+            window.addEventListener('touchend', e=>{
+                if(gameOver) return; 
+                const d=e.changedTouches[0].clientX-touchStartX; 
+                if(Math.abs(d)>30) movePlayer(d>0?1:-1); 
+            });
+
+            // Gas/Brake via holding sides (prevent default to stop scrolling)
+            leftZone.addEventListener('touchstart', (e) => { e.preventDefault(); isBraking = true; });
+            leftZone.addEventListener('touchend', (e) => { e.preventDefault(); isBraking = false; });
+            
+            rightZone.addEventListener('touchstart', (e) => { e.preventDefault(); isAccelerating = true; });
+            rightZone.addEventListener('touchend', (e) => { e.preventDefault(); isAccelerating = false; });
         }
         
         init();
