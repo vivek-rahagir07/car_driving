@@ -16,6 +16,8 @@
             /* Prevent scrolling and pull-to-refresh on mobile */
             touch-action: none;
             background-color: #111827; /* Fallback color */
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         #gameCanvas {
@@ -47,105 +49,45 @@
             background-image: linear-gradient(to right, #2563eb, #3b82f6);
         }
 
-        /* Mobile Controls Overlay */
-        #mobileControls {
+        /* Driving Tips UI */
+        #tipContainer {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        #tipIcon { font-size: 1.2rem; }
+        #tipText { font-size: 0.9rem; font-weight: 500; color: #e5e7eb; }
+
+        /* Mobile Controls Hints */
+        .touch-hint {
             position: absolute;
             bottom: 20px;
-            left: 0;
-            width: 100%;
-            height: 180px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
             pointer-events: none;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 20;
+            text-transform: uppercase;
+            font-weight: bold;
         }
-
-        .control-section {
-            display: flex;
-            align-items: flex-end;
-            pointer-events: auto;
-        }
-
-        #steeringContainer {
-            width: 160px;
-            height: 160px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #steeringWheel {
-            width: 100%;
-            height: 100%;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='none' stroke='%23333' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='44' fill='%231a1a1a' stroke='%23555' stroke-width='2'/%3E%3Cpath d='M50 50 L50 6' stroke='%23333' stroke-width='8'/%3E%3Cpath d='M50 50 L10 70' stroke='%23333' stroke-width='8'/%3E%3Cpath d='M50 50 L90 70' stroke='%23333' stroke-width='8'/%3E%3Ccircle cx='50' cy='50' r='10' fill='%23333'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23555'/%3E%3Cpath d='M48 6 L52 6' stroke='red' stroke-width='4'/%3E%3C/svg%3E") no-repeat center center;
-            background-size: contain;
-            transition: transform 0.1s ease-out;
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
-        }
-
-        .pedal-group {
-            display: flex;
-            gap: 20px;
-            align-items: flex-end;
-        }
-
-        .pedal {
-            position: relative;
-            transition: transform 0.1s;
-            filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.4));
-            cursor: pointer;
-        }
-
-        .pedal:active,
-        .pedal.active {
-            transform: scale(0.95) translateY(2px);
-            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
-        }
-
-        #btnBrake {
-            width: 80px;
-            height: 60px;
-            background: linear-gradient(180deg, #555, #333);
-            border-radius: 8px;
-            border: 2px solid #777;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #btnBrake::after {
-            content: '';
-            width: 70%;
-            height: 4px;
-            background: #222;
-            box-shadow: 0 10px 0 #222, 0 20px 0 #222;
-        }
-
-        #btnGas {
-            width: 60px;
-            height: 120px;
-            background: linear-gradient(180deg, #333, #111);
-            border-radius: 8px;
-            border: 2px solid #555;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #btnGas::after {
-            content: '';
-            width: 4px;
-            height: 80%;
-            background: #222;
-            box-shadow: 10px 0 0 #222, -10px 0 0 #222;
-        }
+        .hint-left { left: 20px; }
+        .hint-right { right: 20px; }
 
         @media (max-width: 768px) {
             .desktop-hint {
                 display: none;
             }
+            #tipContainer { top: 70px; width: 90%; justify-content: center; }
         }
     </style>
 </head>
@@ -162,21 +104,17 @@
         <div id="comboDisplay" class="font-bold text-green-400 hidden">Combo: <span id="comboValue">0</span>x</div>
     </div>
 
+    <!-- Driving Tip UI -->
+    <div id="tipContainer">
+        <span id="tipIcon">☀️</span>
+        <span id="tipText">Conditions Clear: Drive Safely</span>
+    </div>
+
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Mobile Controls Overlay -->
-    <div id="mobileControls" class="md:hidden">
-        <div class="control-section">
-            <div id="steeringContainer">
-                <div id="steeringWheel"></div>
-            </div>
-        </div>
-
-        <div class="control-section pedal-group">
-            <div id="btnBrake" class="pedal" title="Brake"></div>
-            <div id="btnGas" class="pedal" title="Accelerate"></div>
-        </div>
-    </div>
+    <!-- Invisible Touch Controls Hints -->
+    <div class="touch-hint hint-left md:hidden">Hold Left: Brake</div>
+    <div class="touch-hint hint-right md:hidden">Hold Right: Gas</div>
 
     <p class="mt-4 text-gray-400 text-sm md:text-base text-center desktop-hint select-none">
         Keys: Left/Right or A/D (Move), Up/W (Race), Down/S (Brake)
@@ -198,6 +136,64 @@
     </div>
 
     <script type="module">
+        // --- Sound Manager ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+
+            if (type === 'coin') {
+                // High pitched ding
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.exponentialRampToValueAtTime(2000, now + 0.1);
+                
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'boost') {
+                // Rising synth for speed increase
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.3);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'gas') {
+                // Low hum for acceleration
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(80, now);
+                osc.frequency.linearRampToValueAtTime(120, now + 0.1);
+                
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'thunder') {
+                // Low Rumble noise
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(40, now);
+                osc.frequency.exponentialRampToValueAtTime(10, now + 0.5);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                osc.start(now);
+                osc.stop(now + 0.8);
+            }
+        }
+
         // --- DOM Element Selection ---
         const canvas = document.getElementById('gameCanvas');
         const scoreEl = document.getElementById('score');
@@ -208,10 +204,8 @@
         const finalScoreEl = document.getElementById('finalScore');
         const finalComboEl = document.getElementById('finalCombo');
         const restartButton = document.getElementById('restartButton');
-        const steeringContainer = document.getElementById('steeringContainer');
-        const steeringWheel = document.getElementById('steeringWheel');
-        const btnGas = document.getElementById('btnGas');
-        const btnBrake = document.getElementById('btnBrake');
+        const tipTextEl = document.getElementById('tipText');
+        const tipIconEl = document.getElementById('tipIcon');
 
         // --- Game Constants ---
         const LANE_COUNT = 3;
@@ -270,11 +264,16 @@
         let CANVAS_WIDTH, CANVAS_HEIGHT;
         
         // Input Vars
-        let tiltEnabled = false;
-        let currentTilt = 0;
-        let hasTriggeredTurn = false;
         let touchStartX = 0;
         let touchEndX = 0;
+        let touchTimer = 0;
+
+        // Weather System
+        let rainSystem;
+        let weatherState = 'CLEAR'; // CLEAR, RAIN, FOG, STORM
+        let weatherTimer = 0;
+        let lightningTimer = 0;
+        const WEATHER_CYCLE_DURATION = 800; // Frames approx
 
         // --- Utility Functions ---
         function random(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -310,6 +309,28 @@
             dirLight.shadow.camera.left = -50;
             dirLight.shadow.camera.right = 50;
             scene.add(dirLight);
+
+            // --- Rain System Setup ---
+            const rainCount = 1500;
+            const rainGeo = new THREE.BufferGeometry();
+            const rainPos = [];
+            for(let i=0; i<rainCount; i++) {
+                rainPos.push(
+                    randomFloat(-50, 50),
+                    randomFloat(0, 40),
+                    randomFloat(PLAYER_Z_POSITION - 50, PLAYER_Z_POSITION + 20)
+                );
+            }
+            rainGeo.setAttribute('position', new THREE.Float32BufferAttribute(rainPos, 3));
+            const rainMat = new THREE.PointsMaterial({
+                color: 0xaaaaaa,
+                size: 0.2,
+                transparent: true,
+                opacity: 0.6
+            });
+            rainSystem = new THREE.Points(rainGeo, rainMat);
+            rainSystem.visible = false;
+            scene.add(rainSystem);
 
             // Road
             const roadGeometry = new THREE.PlaneGeometry(ROAD_WIDTH, ROAD_LENGTH * 3);
@@ -367,6 +388,10 @@
             maxCombo = 0;
             comboTimer = 0;
             lastSpawnZ = SPAWN_Z_POSITION;
+            
+            // Reset Weather
+            weatherTimer = 0;
+            setWeather('CLEAR');
 
             // Cleanup
             if (playerCar) scene.remove(playerCar);
@@ -396,6 +421,102 @@
             modalEl.classList.add('hidden');
             
             animate();
+        }
+
+        // --- Weather Logic ---
+        function setWeather(type) {
+            weatherState = type;
+            weatherTimer = WEATHER_CYCLE_DURATION;
+            
+            // Default settings
+            scene.background.setHex(0x1e293b);
+            scene.fog.color.setHex(0x1e293b);
+            scene.fog.near = 40;
+            scene.fog.far = 130;
+            rainSystem.visible = false;
+
+            if (type === 'CLEAR') {
+                tipIconEl.textContent = "☀️";
+                tipTextEl.textContent = "Clear Skies: Good visibility. Maintain speed.";
+            } else if (type === 'FOG') {
+                scene.fog.near = 10;
+                scene.fog.far = 60;
+                scene.fog.color.setHex(0x374151); // Grayish fog
+                scene.background.setHex(0x374151);
+                tipIconEl.textContent = "🌫️";
+                tipTextEl.textContent = "Heavy Fog: Low Visibility! Slow down.";
+            } else if (type === 'RAIN') {
+                rainSystem.visible = true;
+                scene.fog.near = 30;
+                scene.fog.far = 90;
+                tipIconEl.textContent = "🌧️";
+                tipTextEl.textContent = "Rain: Roads are slippery. Brake early.";
+            } else if (type === 'STORM') {
+                rainSystem.visible = true;
+                scene.fog.near = 20;
+                scene.fog.far = 70;
+                scene.background.setHex(0x111827); // Very dark
+                scene.fog.color.setHex(0x111827);
+                tipIconEl.textContent = "⛈️";
+                tipTextEl.textContent = "Thunderstorm: Drive carefully!";
+            }
+        }
+
+        function updateWeather(speed) {
+            // Cycle Weather
+            weatherTimer--;
+            if (weatherTimer <= 0) {
+                const states = ['CLEAR', 'FOG', 'RAIN', 'STORM'];
+                let next = states[random(0, states.length - 1)];
+                // Avoid repeating same weather immediately unless random chance
+                if(next === weatherState && Math.random() > 0.3) next = 'CLEAR';
+                setWeather(next);
+            }
+
+            // Rain Animation
+            if (weatherState === 'RAIN' || weatherState === 'STORM') {
+                const positions = rainSystem.geometry.attributes.position.array;
+                for(let i=1; i<positions.length; i+=3) {
+                    positions[i] -= 1.5; // Fall Speed
+                    // Reset if below road
+                    if (positions[i] < 0) {
+                        positions[i] = 40;
+                        positions[i-1] = randomFloat(-50, 50); // Random X
+                        positions[i+1] = randomFloat(PLAYER_Z_POSITION - 20, PLAYER_Z_POSITION + 30); // Random Z around player
+                    }
+                }
+                rainSystem.geometry.attributes.position.needsUpdate = true;
+                
+                // Keep rain system centered on player Z approx
+                rainSystem.position.z = playerCar.position.z - PLAYER_Z_POSITION; 
+                // Actually, our player stays at Z=15 fixed world space usually, but objects move. 
+                // In this code, player is fixed Z, road moves? 
+                // Wait, in `updateRoadLines` line.z changes.
+                // In `updateGameObjects` enemy.z changes.
+                // So the player is STATIC in Z. The world moves towards +Z (scenery spawns at -Z and moves +Z)
+                // So rain should just fall in place relative to camera.
+            }
+
+            // Lightning Logic
+            if (weatherState === 'STORM') {
+                if (lightningTimer > 0) {
+                    lightningTimer--;
+                    if (lightningTimer === 0) {
+                        // End flash
+                        scene.background.setHex(0x111827);
+                        scene.fog.color.setHex(0x111827);
+                    }
+                } else {
+                    // Random chance to strike
+                    if (Math.random() < 0.005) {
+                        // Flash!
+                        playSound('thunder');
+                        scene.background.setHex(0x4b5563); // Bright flash color
+                        scene.fog.color.setHex(0x4b5563);
+                        lightningTimer = random(5, 10);
+                    }
+                }
+            }
         }
 
         // --- Object Creators ---
@@ -711,6 +832,7 @@
                         comboTimer = 180;
                         comboDisplayEl.classList.remove('hidden');
                         comboValueEl.textContent = combo;
+                        playSound('boost');
                         scene.remove(t.mesh);
                         trafficLights.splice(i, 1);
                         spawnExplosion(t.mesh.position, GREEN_LIGHT_COLOR, 5);
@@ -732,6 +854,8 @@
 
                 if (checkCollision(playerCar, c.mesh)) {
                     score += 25;
+                    gameSpeed += 0.005; // Slightly increase speed when collecting coin
+                    playSound('coin');
                     spawnExplosion(c.mesh.position, COIN_COLOR, 4);
                     scene.remove(c.mesh);
                     coins.splice(i, 1);
@@ -886,7 +1010,11 @@
             if (!gameOver) {
                 let speedMult = isAccelerating ? 2.0 : (isBraking ? 0.5 : 1.0);
                 let currentSpeed = gameSpeed * speedMult;
+                
+                // Audio hint for accelerating
+                if (isAccelerating && Math.random() < 0.05) playSound('gas');
 
+                updateWeather(currentSpeed);
                 updatePlayer();
                 updateRoadLines(currentSpeed);
                 updateGameObjects(currentSpeed);
@@ -941,71 +1069,49 @@
                 if(e.key === 'ArrowUp' || e.key === 'w') isAccelerating = false;
                 if(e.key === 'ArrowDown' || e.key === 's') isBraking = false;
             });
-
-            // Touch
-            const handleBtn = (el, start, end) => {
-                if(!el) return;
-                el.addEventListener('touchstart', e => { e.preventDefault(); start(); el.classList.add('active'); }, {passive:false});
-                el.addEventListener('touchend', e => { e.preventDefault(); end(); el.classList.remove('active'); });
-                el.addEventListener('mousedown', e => { start(); el.classList.add('active'); });
-                el.addEventListener('mouseup', e => { end(); el.classList.remove('active'); });
-                el.addEventListener('mouseleave', e => { end(); el.classList.remove('active'); });
-            };
-            handleBtn(btnGas, () => isAccelerating = true, () => isAccelerating = false);
-            handleBtn(btnBrake, () => isBraking = true, () => isBraking = false);
+            
             restartButton.addEventListener('click', resetGame);
 
-            // Swipe
-            window.addEventListener('touchstart', e => {
-                if (e.target.closest('#mobileControls')) return;
-                touchStartX = e.touches[0].clientX;
-            }, {passive:false});
+            // --- Unified Touch/Swipe Controls ---
+            // Zone 1: Left 50% width -> Hold to Brake
+            // Zone 2: Right 50% width -> Hold to Gas
+            // Swipe: Overrides taps for steering
             
+            window.addEventListener('touchstart', e => {
+                if(e.target.closest('button')) return; // Ignore buttons
+                
+                touchStartX = e.touches[0].clientX;
+                const width = window.innerWidth;
+                const x = touchStartX;
+                
+                // Logic: If touch starts on right half -> Gas. Left half -> Brake.
+                // But we wait to see if it's a swipe first? 
+                // Instant response feels better for gas/brake.
+                if (x > width / 2) {
+                    isAccelerating = true;
+                } else {
+                    isBraking = true;
+                }
+            }, {passive: false});
+
             window.addEventListener('touchend', e => {
-                if (gameOver || touchStartX === 0) return;
+                if (gameOver) return;
+                
+                // Handle Swipe on release
                 touchEndX = e.changedTouches[0].clientX;
                 const diff = touchEndX - touchStartX;
                 if (Math.abs(diff) > SWIPE_THRESHOLD) {
                     movePlayer(diff > 0 ? 1 : -1);
                 }
+                
+                // Reset pedals
+                isAccelerating = false;
+                isBraking = false;
                 touchStartX = 0;
             });
             
-            // Tilt Hint
-            if(steeringContainer) {
-                const hint = document.createElement('div');
-                hint.innerText = "TAP TO ENABLE TILT";
-                hint.style.cssText = "position:absolute; width:100%; text-align:center; font-size:10px; font-weight:bold; color:white; pointer-events:none;";
-                steeringContainer.appendChild(hint);
-                
-                steeringContainer.addEventListener('click', async () => {
-                    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                        try {
-                            const resp = await DeviceOrientationEvent.requestPermission();
-                            if(resp === 'granted') enableTilt(hint);
-                        } catch(e) { console.error(e); }
-                    } else {
-                        enableTilt(hint);
-                    }
-                });
-            }
-        }
-
-        function enableTilt(hintEl) {
-            tiltEnabled = true;
-            if(hintEl) hintEl.style.display = 'none';
-            window.addEventListener('deviceorientation', e => {
-                if(!tiltEnabled || !e.gamma) return;
-                const angle = Math.max(-90, Math.min(90, e.gamma));
-                if(steeringWheel) steeringWheel.style.transform = `rotate(${angle}deg)`;
-                
-                if(!hasTriggeredTurn) {
-                    if(angle < -15) { movePlayer(-1); hasTriggeredTurn = true; }
-                    else if(angle > 15) { movePlayer(1); hasTriggeredTurn = true; }
-                } else if(Math.abs(angle) < 5) {
-                    hasTriggeredTurn = false;
-                }
-            });
+            // Prevent context menu on hold
+            window.addEventListener('contextmenu', e => e.preventDefault());
         }
         
         // Start
