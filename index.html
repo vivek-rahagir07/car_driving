@@ -158,6 +158,31 @@
             transition: width 0.1s linear;
         }
 
+        /* Hyper-Drive bar (7-step segmented look) */
+        .hyper-bar {
+            position: relative;
+        }
+
+        .hyper-bar::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(
+                to right,
+                rgba(255,255,255,0.2) 0,
+                rgba(255,255,255,0.2) calc((100% / 7) - 1px),
+                rgba(255,255,255,0.05) calc((100% / 7) - 1px),
+                rgba(255,255,255,0.05) calc(100% / 7)
+            );
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .hyper-bar .speed-bar-fill {
+            background: linear-gradient(90deg, #22c55e, #a855f7);
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.8);
+        }
+
         /* Powerup Stack */
         #statusContainer {
             position: absolute;
@@ -381,6 +406,27 @@
             z-index: 20;
         }
         .zone { flex: 1; }
+
+        /* --- Hyper-Drive Mode global screen effect --- */
+        body.hyper-drive {
+            /* Matrix-style green/purple overall tint */
+            filter: hue-rotate(120deg) saturate(1.4) contrast(1.2);
+        }
+
+        .hyper-drive-pulse {
+            animation: hyperPulse 0.4s alternate infinite;
+        }
+
+        @keyframes hyperPulse {
+            from {
+                box-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+                transform: translateX(0);
+            }
+            to {
+                box-shadow: 0 0 25px rgba(192, 132, 252, 0.9);
+                transform: translateX(-4px);
+            }
+        }
     </style>
 </head>
 
@@ -449,6 +495,14 @@
                         <div class="speed-bar-container">
                             <div id="speedBar" class="speed-bar-fill"></div>
                         </div>
+
+                        <!-- Hyper-Drive segmented bar (7 steps) -->
+                        <div class="mt-2">
+                            <span class="label">Hyper-Drive</span>
+                            <div class="speed-bar-container hyper-bar">
+                                <div id="hyperBar" class="speed-bar-fill"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -505,6 +559,12 @@
     </div>
 
     <canvas id="gameCanvas"></canvas>
+
+    <!-- Manual Hyper-Drive button (appears after 7 energy pickups) -->
+    <button id="hyperBtn" class="cyber-btn"
+        style="display:none; position:fixed; bottom:130px; left:50%; transform:translateX(-50%); z-index:60; padding:10px 35px; font-size:1rem;">
+        HYPER-DRIVE
+    </button>
 
     <!-- Game Over Modal -->
     <div id="gameOverModal">
@@ -618,6 +678,9 @@
         const speedDisplayEl = document.getElementById('speedDisplay');
         const speedBarEl = document.getElementById('speedBar');
         const highScoreEl = document.getElementById('highScore');
+        const hyperBarEl = document.getElementById('hyperBar');
+        const bodyEl = document.body;
+        const hyperBtn = document.getElementById('hyperBtn');
         
         const modalEl = document.getElementById('gameOverModal');
         const startScreenEl = document.getElementById('startScreen');
@@ -653,13 +716,21 @@
         const TREE_TRUNK_COLOR = 0x5d4037; const TREE_LEAVES_COLOR = 0x2e7d32;
         const COIN_COLOR = 0xffd700; const SHIELD_COLOR = 0x06b6d4; const MAGNET_COLOR = 0xf43f5e;
         const NITRO_COLOR = 0xa855f7; const SPIKE_COLOR = 0xef4444;
+        const ENERGY_COLOR = 0x00ff55;
         
         // --- State ---
         let scene, camera, renderer;
         let playerCar, playerShieldMesh;
         let roadLines = [];
-        let enemies = [], ambulances = [], police = [], trafficLights = [], scenery = [], coins = [], powerups = [], particles = [], spikes = [];
+        let enemies = [], ambulances = [], police = [], trafficLights = [], scenery = [], coins = [], powerups = [], particles = [], spikes = [], energy = [];
         let score = 0, gameSpeed = 0.3, gameOver = false, animationFrameId;
+
+        // Hyper-Drive state (manual activation via button)
+        let hyperEnergyCount = 0;
+        const HYPER_REQUIRED = 7;
+        let hyperActive = false;
+        let hyperTimer = 0;
+        const HYPER_DURATION = 420; // ~7 seconds at 60fps
         
         // Safe LocalStorage Access
         let highScore = 0;
@@ -700,7 +771,6 @@
                 ctx.fillStyle = colors[i];
                 for(let y=10; y<120; y+=15) {
                     for(let x=8; x<56; x+=16) {
-                        // Randomly light up windows
                         if(Math.random() > 0.3) {
                             ctx.fillRect(x, y, 10, 10);
                         }
@@ -710,6 +780,43 @@
                 tex.magFilter = THREE.NearestFilter;
                 windowTextures.push(tex);
             }
+        }
+
+        // --- Hyper-Drive helpers ---
+        function setHyperBar() {
+            if (!hyperBarEl) return;
+            const ratio = Math.max(0, Math.min(hyperEnergyCount, HYPER_REQUIRED)) / HYPER_REQUIRED;
+            const pct = ratio * 100;
+            hyperBarEl.style.width = pct + '%';
+        }
+
+        function activateHyperDrive() {
+            if (hyperActive) return;
+            hyperActive = true;
+            hyperTimer = HYPER_DURATION;
+
+            bodyEl.classList.add('hyper-drive');
+            nitroBadge.classList.add('status-active', 'hyper-drive-pulse');
+            playSound('nitro');
+        }
+
+        function deactivateHyperDrive() {
+            hyperActive = false;
+            bodyEl.classList.remove('hyper-drive');
+            nitroBadge.classList.remove('hyper-drive-pulse');
+            if (!isFlying) {
+                nitroBadge.classList.remove('status-active');
+            }
+        }
+
+        function resetHyperDriveSystem() {
+            hyperEnergyCount = 0;
+            hyperActive = false;
+            hyperTimer = 0;
+            setHyperBar();
+            bodyEl.classList.remove('hyper-drive');
+            nitroBadge.classList.remove('hyper-drive-pulse');
+            hyperBtn.style.display = 'none';
         }
 
         // --- Init ---
@@ -772,8 +879,17 @@
 
             addEventListeners();
             highScoreEl.textContent = highScore;
+            setHyperBar();
             
-            // Initial render
+            hyperBtn.addEventListener('click', () => {
+                if (hyperEnergyCount >= HYPER_REQUIRED && !hyperActive) {
+                    activateHyperDrive();
+                    hyperEnergyCount = 0;
+                    setHyperBar();
+                    hyperBtn.style.display = 'none';
+                }
+            });
+            
             renderer.render(scene, camera);
         }
 
@@ -794,9 +910,8 @@
                 count--;
                 if(count > 0) {
                     countdownTextEl.innerText = count;
-                    // Reset animation
                     countdownTextEl.style.animation = 'none';
-                    countdownTextEl.offsetHeight; /* trigger reflow */
+                    countdownTextEl.offsetHeight;
                     countdownTextEl.style.animation = 'pulseCount 0.9s ease-out';
                 } else if (count === 0) {
                     countdownTextEl.innerText = "GO!";
@@ -826,16 +941,18 @@
             shieldBadge.classList.remove('status-active');
             magnetBadge.classList.remove('status-active');
             nitroBadge.classList.remove('status-active');
+
+            resetHyperDriveSystem();
             
-            timeOfDay = 0.8; // Start at morning/day
+            timeOfDay = 0.8;
             
             if (playerCar) scene.remove(playerCar);
             if (playerShieldMesh) scene.remove(playerShieldMesh);
             
-            [...enemies, ...ambulances, ...police, ...trafficLights, ...scenery, ...coins, ...powerups, ...spikes].forEach(obj => scene.remove(obj.mesh));
+            [...enemies, ...ambulances, ...police, ...trafficLights, ...scenery, ...coins, ...powerups, ...spikes, ...energy].forEach(obj => scene.remove(obj.mesh));
             particles.forEach(p => scene.remove(p));
-            enemies=[]; ambulances=[]; police=[]; trafficLights=[]; scenery=[]; coins=[]; powerups=[]; particles=[]; spikes=[];
-
+            enemies=[]; ambulances=[]; police=[]; trafficLights=[]; scenery=[]; coins=[]; powerups=[]; particles=[]; spikes=[]; energy=[];
+            
             for (let z = PLAYER_Z_POSITION; z > SPAWN_Z_POSITION * 1.5; z -= 15) spawnSceneryRow(z);
 
             playerCar = createCar(PLAYER_COLOR, true);
@@ -852,12 +969,13 @@
             scoreEl.textContent = score; 
             speedDisplayEl.textContent = '0.0';
             speedBarEl.style.width = '0%';
+            setHyperBar();
             
             animate();
         }
 
         function updateTimeOfDay() {
-            timeOfDay += 0.0003; // Time speed
+            timeOfDay += 0.0003;
             if (timeOfDay > 1) timeOfDay = 0;
 
             const sunColor = new THREE.Color();
@@ -870,17 +988,15 @@
             let stateLabel = "";
 
             if (timeOfDay < 0.25) { 
-                // NIGHT (0.0 - 0.25)
                 stateLabel = "NIGHT";
                 skyColor.setHex(0x050510); fogColor.setHex(0x050510);
-                sunColor.setHex(0x444488); // Moonlight
+                sunColor.setHex(0x444488);
                 ambientInt = 0.2; sunInt = 0.2;
                 buildingEmissive = 1.0; streetLightInt = 1.5;
                 tipIconEl.textContent = "🌙";
             } else if (timeOfDay < 0.35) {
-                // DAWN (0.25 - 0.35)
                 stateLabel = "DAWN";
-                const t = (timeOfDay - 0.25) * 10; // 0 to 1
+                const t = (timeOfDay - 0.25) * 10;
                 skyColor.lerpColors(new THREE.Color(0x050510), new THREE.Color(0xffaa55), t);
                 fogColor.copy(skyColor);
                 sunColor.setHex(0xffaa55);
@@ -888,7 +1004,6 @@
                 buildingEmissive = 1.0 - t; streetLightInt = 1.5 * (1-t);
                 tipIconEl.textContent = "🌅";
             } else if (timeOfDay < 0.75) {
-                // DAY (0.35 - 0.75)
                 stateLabel = "DAY";
                 skyColor.setHex(0x87CEEB); fogColor.setHex(0x87CEEB);
                 sunColor.setHex(0xffffff);
@@ -896,7 +1011,6 @@
                 buildingEmissive = 0; streetLightInt = 0;
                 tipIconEl.textContent = "☀️";
             } else if (timeOfDay < 0.85) {
-                // DUSK (0.75 - 0.85)
                 stateLabel = "DUSK";
                 const t = (timeOfDay - 0.75) * 10;
                 skyColor.lerpColors(new THREE.Color(0x87CEEB), new THREE.Color(0x993355), t);
@@ -906,7 +1020,6 @@
                 buildingEmissive = t; streetLightInt = t * 1.5;
                 tipIconEl.textContent = "🌇";
             } else {
-                // NIGHT Transition (0.85 - 1.0)
                 stateLabel = "NIGHT";
                 const t = (timeOfDay - 0.85) / 0.15;
                 skyColor.lerpColors(new THREE.Color(0x993355), new THREE.Color(0x050510), t);
@@ -917,14 +1030,29 @@
                 tipIconEl.textContent = "🌙";
             }
 
-            tipTextEl.textContent = stateLabel;
+            if (hyperActive) {
+                const matrixSky = new THREE.Color(0x050510);
+                const matrixFog = new THREE.Color(0x001a1a);
+
+                skyColor.lerp(matrixSky, 0.7);
+                fogColor.lerp(matrixFog, 0.7);
+                sunColor.setHex(0x00ff88);
+
+                buildingEmissive = Math.max(buildingEmissive, 1.2);
+                streetLightInt = Math.max(streetLightInt, 1.5);
+
+                tipTextEl.textContent = "HYPER-DRIVE";
+                tipIconEl.textContent = "⚡";
+            } else {
+                tipTextEl.textContent = stateLabel;
+            }
+
             scene.background.copy(skyColor);
             scene.fog.color.copy(fogColor);
             sunLight.color.copy(sunColor);
             sunLight.intensity = sunInt;
             ambientLight.intensity = ambientInt;
 
-            // Update Environment
             scenery.forEach(s => {
                 if (s.isBuilding) {
                     s.mesh.material.emissiveIntensity = buildingEmissive;
@@ -935,27 +1063,25 @@
             });
         }
 
-        // --- Core Functions (Added) ---
+        // --- Core Functions ---
         function updatePlayer() {
             playerCar.position.x += (playerTargetX - playerCar.position.x) * 0.15;
             playerCar.rotation.z = (playerTargetX - playerCar.position.x) * -0.05;
 
-            // Flying Logic
             let targetY = 0;
             let targetRotX = 0;
             
             if (flyTimer > 0) {
                 flyTimer--;
-                targetY = 5.0; // Fly height
-                targetRotX = -0.15; // Tilt up
-                if (flyTimer < 30) targetRotX = 0.1; // Tilt down for landing
+                targetY = 5.0;
+                targetRotX = -0.15;
+                if (flyTimer < 30) targetRotX = 0.1;
                 
-                // Engine flame particles when flying
                 if(Math.random() > 0.5) {
                     const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.5), new THREE.MeshBasicMaterial({color: 0x3b82f6, transparent: true, opacity: 1.0}));
                     p.position.copy(playerCar.position);
                     p.position.y += 1.0;
-                    p.position.z += 2.5; // Behind car
+                    p.position.z += 2.5;
                     p.userData.vel = new THREE.Vector3(randomFloat(-0.2, 0.2), randomFloat(-0.2, 0.2), 1.0);
                     scene.add(p);
                     particles.push(p);
@@ -985,7 +1111,7 @@
                 const p = particles[i];
                 p.position.add(p.userData.vel);
                 p.userData.vel.y -= 0.01;
-                p.material.opacity -= 0.05; // Fade faster
+                p.material.opacity -= 0.05;
                 if(p.material.opacity <= 0 || p.position.y < 0) {
                     scene.remove(p);
                     particles.splice(i,1);
@@ -998,7 +1124,6 @@
             gameOver = true;
             cancelAnimationFrame(animationFrameId);
             
-            // Explosion particles
             for(let i=0; i<30; i++) {
                 const p = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color:0xff5500, transparent: true}));
                 p.position.copy(playerCar.position);
@@ -1010,7 +1135,6 @@
             scene.remove(playerCar);
             if(engineMasterGain) engineMasterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
 
-            // High Score Logic
             let newRecord = false;
             if(score > highScore) {
                 highScore = Math.floor(score);
@@ -1027,7 +1151,6 @@
 
             modalEl.classList.add('active');
             
-            // Render one last frame to show explosion start
             renderer.render(scene, camera);
         }
 
@@ -1043,7 +1166,7 @@
                 map: tex, 
                 emissive: 0xffffff, 
                 emissiveMap: tex,
-                emissiveIntensity: 0 // Controlled by time of day
+                emissiveIntensity: 0
             });
             
             const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -1060,19 +1183,17 @@
             const arm = new THREE.Mesh(new THREE.BoxGeometry(3, 0.15, 0.15), new THREE.MeshStandardMaterial({ color: 0x1f2937 }));
             arm.position.set(1, 9.8, 0); group.add(arm);
             
-            // Bulb housing
             const bulb = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0xffffaa }));
             bulb.position.set(2.2, 9.6, 0); group.add(bulb);
             
             const light = new THREE.PointLight(0xffaa00, 0, 30);
             light.position.set(2.2, 9, 0);
             group.add(light);
-            group.userData.light = light; // Ref for update
+            group.userData.light = light;
             
             return group;
         }
 
-        // --- Existing Object Logic (Simplified) ---
         function createCar(color, isPlayer=false) { 
             const car = new THREE.Group();
             const bodyMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.6, roughness: 0.2 });
@@ -1081,26 +1202,26 @@
             const cabin = new THREE.Mesh(new THREE.BoxGeometry(CAR_BODY_WIDTH*0.75, 0.6, CAR_BODY_DEPTH*0.4), new THREE.MeshStandardMaterial({ color: 0x111, roughness: 0}));
             cabin.position.set(0, 1.6, -0.2); car.add(cabin);
             
-            // Lights
             if(isPlayer) {
                 const hl = new THREE.SpotLight(0xffffff, 2, 60, 0.5, 0.5); hl.position.set(0,1,-2.2); hl.target.position.set(0,0,-20);
                 car.add(hl); car.add(hl.target);
             }
-            // Wheels
+
             const wG = new THREE.CylinderGeometry(0.5,0.5,0.3,16); wG.rotateZ(Math.PI/2); const wM=new THREE.MeshStandardMaterial({color:0x111});
             [[-1,0.7],[1,0.7],[-1,-0.7],[1,-0.7]].forEach(p=>{const w=new THREE.Mesh(wG,wM); w.position.set(p[0]*1.25,0.5,p[1]*2.25); car.add(w);});
             car.userData.box = new THREE.Box3().setFromObject(chassis);
             return car;
         }
+
         function createTree() { 
             const g = new THREE.Group(); 
             g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.4,2), new THREE.MeshStandardMaterial({color:0x5d4037}))); 
             const l = new THREE.Mesh(new THREE.DodecahedronGeometry(1.5), new THREE.MeshStandardMaterial({color:0x2e7d32})); l.position.y=2; g.add(l);
             g.children[0].position.y=1; return g; 
         }
+
         function createPowerup(type) { 
             const g=new THREE.Group(); 
-            // FIXED: Raised spawn height to 1.5 to align with car chassis collision box
             let col = MAGNET_COLOR;
             if (type === 'SHIELD') col = SHIELD_COLOR;
             if (type === 'NITRO') col = NITRO_COLOR;
@@ -1108,21 +1229,19 @@
             const m=new THREE.Mesh(type==='SHIELD'?new THREE.IcosahedronGeometry(0.6):new THREE.BoxGeometry(0.7,0.7,0.7), new THREE.MeshStandardMaterial({color:col, emissiveIntensity:0.5, emissive:col})); 
             g.add(m); g.userData.box=new THREE.Box3().setFromObject(m); g.userData.type=type; return g; 
         }
+
         function createSpike() {
             const g = new THREE.Group();
             const mat = new THREE.MeshStandardMaterial({color: SPIKE_COLOR, metalness: 0.8, roughness: 0.2});
-            // Create a strip of spikes
             for(let i=-1.5; i<=1.5; i+=1.0) {
                 const s = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.2, 8), mat);
                 s.position.x = i;
                 s.position.y = 0.6;
                 g.add(s);
             }
-            // Base plate
             const base = new THREE.Mesh(new THREE.BoxGeometry(4, 0.1, 1), new THREE.MeshStandardMaterial({color: 0x333333}));
             base.position.y = 0.05;
             g.add(base);
-            
             g.userData.box = new THREE.Box3().setFromObject(g);
             return g;
         }
@@ -1130,6 +1249,42 @@
         function createCoin() { 
             const c=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.7,0.1,16), new THREE.MeshStandardMaterial({color:COIN_COLOR, emissive:0xaa8800})); 
             c.rotation.x=Math.PI/2; const g=new THREE.Group(); g.add(c); g.userData.box=new THREE.Box3().setFromObject(c); return g; 
+        }
+
+        // 🔥 Animated Energy Bar (green cube with halo & pulse)
+        function createEnergyBar() {
+            const geom = new THREE.BoxGeometry(0.7, 0.7, 0.7);
+            const mat  = new THREE.MeshStandardMaterial({
+                color: ENERGY_COLOR,
+                emissive: ENERGY_COLOR,
+                emissiveIntensity: 1.2,
+                metalness: 0.4,
+                roughness: 0.1
+            });
+
+            const core = new THREE.Mesh(geom, mat);
+
+            const haloGeom = new THREE.BoxGeometry(1.0, 1.0, 1.0);
+            const haloMat = new THREE.MeshBasicMaterial({
+                color: 0x00ff55,
+                transparent: true,
+                opacity: 0.25
+            });
+
+            const halo = new THREE.Mesh(haloGeom, haloMat);
+
+            const group = new THREE.Group();
+            group.add(core);
+            group.add(halo);
+
+            group.scale.set(1, 1, 1);
+
+            group.userData.pulse = 0;
+            group.userData.core = core;
+            group.userData.halo = halo;
+            group.userData.box = new THREE.Box3().setFromObject(core);
+
+            return group;
         }
 
         // --- Core Loops ---
@@ -1141,44 +1296,132 @@
                     let o = list[i]; 
                     o.mesh.position.z+=speed; 
                     
-                    if(type==='POWERUP') { o.mesh.rotation.y += 0.05; o.mesh.rotation.x += 0.05; }
-                    if(type==='COIN') { o.mesh.rotation.y += 0.05; }
+                    if(type==='POWERUP') { 
+                        o.mesh.rotation.y += 0.05; 
+                        o.mesh.rotation.x += 0.05; 
+                    }
+                    if(type==='COIN') { 
+                        o.mesh.rotation.y += 0.05; 
+                    }
+                    if (type === 'ENERGY') {
+                        o.mesh.rotation.y += 0.08;
+                        o.mesh.rotation.x += 0.04;
+
+                        o.mesh.userData.pulse += 0.08;
+                        const s = 1 + Math.sin(o.mesh.userData.pulse) * 0.15;
+                        o.mesh.scale.set(s, s, s);
+
+                        o.mesh.userData.core.material.emissiveIntensity = 1 + Math.sin(o.mesh.userData.pulse) * 0.5;
+                        o.mesh.userData.halo.material.opacity = 0.3 + Math.abs(Math.sin(o.mesh.userData.pulse * 2)) * 0.2;
+
+                        o.mesh.position.y = 1.2 + Math.sin(o.mesh.userData.pulse * 1.2) * 0.25;
+                    }
                     
                     o.mesh.updateMatrixWorld(); 
-                    o.mesh.userData.box.setFromObject(o.mesh.children[0]);
+                    o.mesh.userData.box.setFromObject(o.mesh);
                     
-                    // Magnet Logic
                     if(type==='COIN' && hasMagnet && o.mesh.position.z > -40 && o.mesh.position.z < 20) {
                         o.mesh.position.x += (playerCar.position.x - o.mesh.position.x)*0.2;
                         o.mesh.position.z += (playerCar.position.z - o.mesh.position.z)*0.2;
-                        o.mesh.position.y += (playerCar.position.y - o.mesh.position.y)*0.2; // Magnet pulls up to flying car too
+                        o.mesh.position.y += (playerCar.position.y - o.mesh.position.y)*0.2;
                     }
 
                     if(checkCollision(playerCar, o.mesh)) {
-                        if(type==='ENEMY'||type==='POLICE'||type==='SPIKE') { 
+                        if(type==='ENEMY'||type==='POLICE'||type==='SPIKE') {
+
+                            if (hyperActive) {
+                                score += 150;
+
+                                for (let p = 0; p < 12; p++) {
+                                    const part = new THREE.Mesh(
+                                        new THREE.BoxGeometry(0.4, 0.4, 0.4),
+                                        new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.9 })
+                                    );
+                                    part.position.copy(o.mesh.position);
+                                    part.userData.vel = new THREE.Vector3(
+                                        randomFloat(-0.8, 0.8),
+                                        randomFloat(0.3, 1.2),
+                                        randomFloat(-0.8, 0.8)
+                                    );
+                                    scene.add(part);
+                                    particles.push(part);
+                                }
+
+                                scene.remove(o.mesh);
+                                list.splice(i, 1);
+                                continue;
+                            }
+
                             if(!hasShield && invincibleTimer===0) endGame(); 
                             else { 
-                                if(hasShield) {hasShield=false; shieldBadge.classList.remove('status-active'); playSound('break'); invincibleTimer=60;} 
-                                scene.remove(o.mesh); list.splice(i,1); 
+                                if(hasShield) {
+                                    hasShield=false;
+                                    shieldBadge.classList.remove('status-active');
+                                    playSound('break');
+                                    invincibleTimer=60;
+                                } 
+                                scene.remove(o.mesh); 
+                                list.splice(i,1); 
+                                continue;
                             } 
                         }
-                        else if(type==='COIN') { score+=25; playSound('coin'); scene.remove(o.mesh); list.splice(i,1); }
-                        else if(type==='POWERUP') { 
-                            if(o.type==='SHIELD'){ playSound('boost'); hasShield=true;shieldBadge.classList.add('status-active'); }
-                            else if(o.type==='NITRO'){ playSound('nitro'); isFlying=true; flyTimer=400; nitroBadge.classList.add('status-active'); }
-                            else{ playSound('boost'); hasMagnet=true;magnetTimer=600;magnetBadge.classList.add('status-active'); } 
-                            scene.remove(o.mesh); list.splice(i,1); 
+                        else if(type==='COIN') { 
+                            score+=25; 
+                            playSound('coin'); 
+                            scene.remove(o.mesh); 
+                            list.splice(i,1); 
                         }
-                    } else if(o.mesh.position.z>DESPAWN_Z_POSITION) { if(type==='ENEMY') score+=10; scene.remove(o.mesh); list.splice(i,1); }
+                        else if(type==='POWERUP') { 
+                            if(o.type==='SHIELD'){ 
+                                playSound('boost'); 
+                                hasShield=true;
+                                shieldBadge.classList.add('status-active'); 
+                            }
+                            else if(o.type==='NITRO'){ 
+                                playSound('nitro'); 
+                                isFlying=true; 
+                                flyTimer=400; 
+                                nitroBadge.classList.add('status-active'); 
+                            }
+                            else{ 
+                                playSound('boost'); 
+                                hasMagnet=true;
+                                magnetTimer=600;
+                                magnetBadge.classList.add('status-active'); 
+                            } 
+                            scene.remove(o.mesh); 
+                            list.splice(i,1); 
+                        }
+                        else if (type === 'ENERGY') {
+                            if (hyperEnergyCount < HYPER_REQUIRED) {
+                                hyperEnergyCount++;
+                                setHyperBar();
+                                playSound('boost');
+                                if (hyperEnergyCount >= HYPER_REQUIRED && !hyperActive) {
+                                    hyperBtn.style.display = 'block';
+                                }
+                            }
+                            scene.remove(o.mesh);
+                            list.splice(i, 1);
+                            continue;
+                        }
+                    } else if(o.mesh.position.z>DESPAWN_Z_POSITION) { 
+                        if(type==='ENEMY') score+=10; 
+                        scene.remove(o.mesh); 
+                        list.splice(i,1); 
+                    }
                 }
             };
-            updateObj(enemies, 'ENEMY'); updateObj(police, 'POLICE'); updateObj(powerups, 'POWERUP'); updateObj(coins, 'COIN'); updateObj(spikes, 'SPIKE');
+            updateObj(enemies, 'ENEMY'); 
+            updateObj(police, 'POLICE'); 
+            updateObj(powerups, 'POWERUP'); 
+            updateObj(coins, 'COIN'); 
+            updateObj(spikes, 'SPIKE');
+            updateObj(energy, 'ENERGY');
             
-            // Magnet Timer
             if(hasMagnet) { magnetTimer--; if(magnetTimer<=0) {hasMagnet=false; magnetBadge.classList.remove('status-active');} }
             if(invincibleTimer>0) invincibleTimer--;
             
-            // Shield Mesh
             playerShieldMesh.visible = hasShield;
             playerShieldMesh.position.copy(playerCar.position); playerShieldMesh.position.y+=1; playerShieldMesh.rotation.y+=0.1;
         }
@@ -1201,7 +1444,6 @@
         function spawnObjects() {
             if(Math.random()<0.05) spawnSceneryRow(SPAWN_Z_POSITION);
             
-            // Spikes (High spawn rate for difficulty)
             if(Math.random()<0.008 && isLaneClear(1)) {
                 const lane=random(0,2);
                 if(isLaneClear(lane)) {
@@ -1217,6 +1459,7 @@
                      enemies.push({mesh:m, lane}); scene.add(m); lastSpawnZ=SPAWN_Z_POSITION;
                  }
             }
+
             if(Math.random()<0.004) {
                  const l=random(0,2); 
                  const r=Math.random();
@@ -1225,16 +1468,13 @@
                  else if(r<0.66) t='NITRO';
                  
                  const m=createPowerup(t);
-                 // FIXED: Spawn height Y=1.2 to prevent underground spawning
                  m.position.set(laneToX(l),1.2,SPAWN_Z_POSITION); powerups.push({mesh:m,lane:l,type:t}); scene.add(m); lastSpawnZ=SPAWN_Z_POSITION;
             }
 
-            // Coins Logic
             if(Math.random() < 0.1 && isLaneClear(1)) {
                 const lane = random(0, 2);
-                // If flying, 90% chance coins are in the sky. If driving, 5% chance (just to tease).
                 const isSky = isFlying ? (Math.random() < 0.9) : (Math.random() < 0.05);
-                const y = isSky ? 5.0 : 1.0; // Sky height vs Ground height
+                const y = isSky ? 5.0 : 1.0;
                 
                 const m = createCoin();
                 m.position.set(laneToX(lane), y, SPAWN_Z_POSITION);
@@ -1242,42 +1482,90 @@
                 scene.add(m);
                 lastSpawnZ = SPAWN_Z_POSITION;
             }
+
+            if (Math.random() < 0.01 && isLaneClear(1)) {
+                const lane = random(0, 2);
+                const e = createEnergyBar();
+                e.position.set(laneToX(lane), 1.2, SPAWN_Z_POSITION);
+                energy.push({ mesh:e, lane });
+                scene.add(e);
+                lastSpawnZ = SPAWN_Z_POSITION;
+            }
         }
-        function isLaneClear(l) { return lastSpawnZ < SPAWN_Z_POSITION + 20; }
-        function checkCollision(a,b) { return a.userData.box && b.userData.box && a.userData.box.intersectsBox(b.userData.box); }
+
+        function isLaneClear(l) { 
+            return lastSpawnZ < SPAWN_Z_POSITION + 20; 
+        }
+
+        function checkCollision(a,b) { 
+            return a.userData.box && b.userData.box && a.userData.box.intersectsBox(b.userData.box); 
+        }
 
         // --- Loop ---
         function animate() {
             animationFrameId = requestAnimationFrame(animate);
             if(!gameOver) {
-                if(isCountingDown) return; // Don't run game logic during countdown
+                if(isCountingDown) return; 
 
-                let speedMult = isAccelerating?2.0:(isBraking?0.5:1.0);
-                let currentSpeed = gameSpeed*speedMult;
+                let speedMult = isAccelerating ? 2.0 : (isBraking ? 0.5 : 1.0);
+                if (hyperActive) speedMult *= 2.2;
+
+                let currentSpeed = gameSpeed * speedMult;
                 
                 updateTimeOfDay();
                 updateEngine(currentSpeed, isAccelerating);
                 updatePlayer();
                 updateRoadLines(currentSpeed);
                 updateGameObjects(currentSpeed);
-                updateParticles(); // Add particle update
+                updateParticles(); 
                 spawnObjects();
                 
+                if (hyperActive) {
+                    hyperTimer--;
+                    if (hyperTimer <= 0) {
+                        deactivateHyperDrive();
+                    }
+
+                    for (let s = 0; s < 3; s++) {
+                        const sl = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.1, 0.1, randomFloat(3, 7)),
+                            new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.7 })
+                        );
+                        const side = Math.random() < 0.5 ? -1 : 1;
+                        sl.position.set(
+                            camera.position.x + side * randomFloat(4, 8),
+                            randomFloat(1, 4),
+                            camera.position.z - randomFloat(8, 16)
+                        );
+                        sl.userData.vel = new THREE.Vector3(
+                            0,
+                            0,
+                            currentSpeed * 8
+                        );
+                        scene.add(sl);
+                        particles.push(sl);
+                    }
+                }
+
                 scoreEl.textContent = Math.floor(score);
                 const displaySpeed = (currentSpeed * 200).toFixed(0);
                 speedDisplayEl.textContent = displaySpeed;
                 
-                // Update speed bar
                 const percentage = Math.min((currentSpeed / 2.0) * 100, 100);
                 speedBarEl.style.width = percentage + '%';
 
                 gameSpeed = Math.min(gameSpeed+0.0001, 1.0);
                 
-                camera.fov += ((isAccelerating?85:75)-camera.fov)*0.05;
+                let targetFov = 75;
+                if (hyperActive) targetFov = 110;
+                else if (isAccelerating) targetFov = 85;
+
+                camera.fov += (targetFov - camera.fov) * 0.08;
                 camera.updateProjectionMatrix();
+
                 renderer.render(scene, camera);
             } else {
-                updateParticles(); // Keep particles moving after death
+                updateParticles(); 
                 renderer.render(scene, camera);
             }
         }
@@ -1297,14 +1585,15 @@
                 if(!isGameRunning && (e.key === 'Enter' || e.key === ' ')) { triggerCountdown(); return; }
                 if(gameOver) return; 
                 
-                // Highlight keys
                 if(e.key === 'w' || e.key === 'ArrowUp') keyW?.classList.add('active');
                 if(e.key === 'a' || e.key === 'ArrowLeft') keyA?.classList.add('active');
                 if(e.key === 's' || e.key === 'ArrowDown') keyS?.classList.add('active');
                 if(e.key === 'd' || e.key === 'ArrowRight') keyD?.classList.add('active');
 
-                if(e.key==='a'||e.key==='ArrowLeft')movePlayer(-1); if(e.key==='d'||e.key==='ArrowRight')movePlayer(1);
-                if(e.key==='w'||e.key==='ArrowUp')isAccelerating=true; if(e.key==='s'||e.key==='ArrowDown')isBraking=true;
+                if(e.key==='a'||e.key==='ArrowLeft')movePlayer(-1); 
+                if(e.key==='d'||e.key==='ArrowRight')movePlayer(1);
+                if(e.key==='w'||e.key==='ArrowUp')isAccelerating=true; 
+                if(e.key==='s'||e.key==='ArrowDown')isBraking=true;
             });
             window.addEventListener('keyup', e=>{
                 if(e.key === 'w' || e.key === 'ArrowUp') keyW?.classList.remove('active');
@@ -1312,16 +1601,15 @@
                 if(e.key === 's' || e.key === 'ArrowDown') keyS?.classList.remove('active');
                 if(e.key === 'd' || e.key === 'ArrowRight') keyD?.classList.remove('active');
 
-                if(e.key==='w'||e.key==='ArrowUp')isAccelerating=false; if(e.key==='s'||e.key==='ArrowDown')isBraking=false;
+                if(e.key==='w'||e.key==='ArrowUp')isAccelerating=false; 
+                if(e.key==='s'||e.key==='ArrowDown')isBraking=false;
             });
             restartButton.addEventListener('click', ()=>{ triggerCountdown(); });
             startButton.addEventListener('click', ()=>{ triggerCountdown(); });
 
-            // Mobile Touch Logic
             const leftZone = document.getElementById('leftZone');
             const rightZone = document.getElementById('rightZone');
 
-            // Steering via Swipe
             window.addEventListener('touchstart', e=>{
                 if(gameOver) return;
                 touchStartX=e.touches[0].clientX; 
@@ -1333,7 +1621,6 @@
                 if(Math.abs(d)>30) movePlayer(d>0?1:-1); 
             });
 
-            // Gas/Brake via holding sides (prevent default to stop scrolling)
             leftZone.addEventListener('touchstart', (e) => { e.preventDefault(); isBraking = true; });
             leftZone.addEventListener('touchend', (e) => { e.preventDefault(); isBraking = false; });
             
