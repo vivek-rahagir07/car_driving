@@ -139,8 +139,118 @@
         // --- Sound Manager ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
+        // Advanced Engine Sound System
+        let engineOsc1 = null; // Main tone
+        let engineOsc2 = null; // Sub bass
+        let engineNoise = null; // Road/Wind texture
+        let engineFilter = null; // Muffler simulation
+        let engineMasterGain = null;
+
+        function createNoiseBuffer() {
+            const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            return buffer;
+        }
+
+        const noiseBuffer = createNoiseBuffer();
+
+        function startEngine() {
+            if (engineOsc1) return; // Already started
+            
+            // 1. Create Nodes
+            engineOsc1 = audioCtx.createOscillator();
+            engineOsc2 = audioCtx.createOscillator();
+            engineNoise = audioCtx.createBufferSource();
+            
+            engineFilter = audioCtx.createBiquadFilter();
+            engineMasterGain = audioCtx.createGain();
+            
+            // 2. Configure Oscillators
+            // Main Engine Tone (Sawtooth for grit)
+            engineOsc1.type = 'sawtooth';
+            engineOsc1.frequency.value = 60; 
+
+            // Sub Bass (Sine for rumble, one octave down)
+            engineOsc2.type = 'sine';
+            engineOsc2.frequency.value = 30;
+
+            // Wind/Road Noise
+            engineNoise.buffer = noiseBuffer;
+            engineNoise.loop = true;
+
+            // 3. Configure Filter (The "Muffler")
+            engineFilter.type = 'lowpass';
+            engineFilter.Q.value = 2; // Resonance
+
+            // 4. Wiring
+            // Connect tones to filter
+            engineOsc1.connect(engineFilter);
+            engineOsc2.connect(engineFilter);
+            
+            // Connect noise directly to master (wind shouldn't be muffled by engine filter)
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.value = 0.05;
+            engineNoise.connect(noiseGain);
+            noiseGain.connect(engineMasterGain);
+
+            // Connect Filter to Master
+            engineFilter.connect(engineMasterGain);
+
+            // Connect Master to Output
+            engineMasterGain.connect(audioCtx.destination);
+
+            // Start everything
+            engineOsc1.start();
+            engineOsc2.start();
+            engineNoise.start();
+            
+            // Initial Idle State
+            engineMasterGain.gain.value = 0.1;
+            engineFilter.frequency.value = 200;
+        }
+
+        function updateEngine(speed, accelerating) {
+            if (!engineOsc1) return;
+            const now = audioCtx.currentTime;
+            
+            // 1. Calculate RPM (Base + Speed factor)
+            // Speed varies ~0.1 to 2.0
+            const baseFreq = 60;
+            const rpmMultiplier = 1 + (speed * 3); // Revs go higher now
+            const targetFreq = baseFreq * rpmMultiplier;
+            const subFreq = targetFreq * 0.5;
+
+            // Smoothly ramp frequency (Pitch)
+            engineOsc1.frequency.setTargetAtTime(targetFreq, now, 0.1);
+            engineOsc2.frequency.setTargetAtTime(subFreq, now, 0.1);
+            
+            // 2. Dynamic Filtering (Timbre)
+            // When slow: Filter is closed (muffled, rumbling sound)
+            // When fast: Filter opens (bright, screaming sound)
+            const targetFilterFreq = 200 + (speed * 2000); 
+            engineFilter.frequency.setTargetAtTime(targetFilterFreq, now, 0.1);
+
+            // 3. Volume / Load
+            // Engine is louder when ACCELERATING (gas pedal down)
+            // Quieter when coasting
+            let targetVol = 0.1;
+            if (accelerating) {
+                targetVol = 0.2 + (speed * 0.1); // Gets louder with speed
+            } else {
+                targetVol = 0.05 + (speed * 0.05); // Quiet rumble
+            }
+            engineMasterGain.gain.setTargetAtTime(targetVol, now, 0.1);
+        }
+        
         function playSound(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // Auto-start engine if context is ready and missing
+            if (audioCtx.state === 'running' && !engineOsc1) startEngine();
             
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -171,17 +281,6 @@
                 
                 osc.start(now);
                 osc.stop(now + 0.3);
-            } else if (type === 'gas') {
-                // Low hum for acceleration
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(80, now);
-                osc.frequency.linearRampToValueAtTime(120, now + 0.1);
-                
-                gain.gain.setValueAtTime(0.05, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
-                
-                osc.start(now);
-                osc.stop(now + 0.1);
             } else if (type === 'thunder') {
                 // Low Rumble noise
                 osc.type = 'sawtooth';
@@ -191,6 +290,8 @@
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
                 osc.start(now);
                 osc.stop(now + 0.8);
+            } else if (type === 'gas') {
+                 // Removed: The new continuous engine replaces the need for a 'gas' trigger sound
             }
         }
 
@@ -378,6 +479,11 @@
 
         function resetGame() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            // Restore engine volume if it exists
+            if (engineMasterGain) {
+                engineMasterGain.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.5);
+            }
 
             score = 0;
             gameSpeed = 0.3;
@@ -995,6 +1101,11 @@
             gameOver = true;
             cancelAnimationFrame(animationFrameId);
             
+            // Fade out engine sound
+            if (engineMasterGain) {
+                engineMasterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+            }
+            
             spawnExplosion(playerCar.position, 0xff5500, 30);
             scene.remove(playerCar);
             updateParticles(); // One last update for explosion
@@ -1011,8 +1122,8 @@
                 let speedMult = isAccelerating ? 2.0 : (isBraking ? 0.5 : 1.0);
                 let currentSpeed = gameSpeed * speedMult;
                 
-                // Audio hint for accelerating
-                if (isAccelerating && Math.random() < 0.05) playSound('gas');
+                // Continuous Engine Update
+                updateEngine(currentSpeed, isAccelerating);
 
                 updateWeather(currentSpeed);
                 updatePlayer();
@@ -1058,7 +1169,15 @@
 
         function addEventListeners() {
             window.addEventListener('resize', updateCanvasSize);
+            
+            // Helper to start audio on first interaction
+            const resumeAudio = () => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (!engineOsc1) startEngine();
+            };
+
             window.addEventListener('keydown', e => {
+                resumeAudio();
                 if(gameOver) return;
                 if(e.key === 'ArrowLeft' || e.key === 'a') movePlayer(-1);
                 if(e.key === 'ArrowRight' || e.key === 'd') movePlayer(1);
@@ -1070,7 +1189,10 @@
                 if(e.key === 'ArrowDown' || e.key === 's') isBraking = false;
             });
             
-            restartButton.addEventListener('click', resetGame);
+            restartButton.addEventListener('click', () => {
+                resumeAudio();
+                resetGame();
+            });
 
             // --- Unified Touch/Swipe Controls ---
             // Zone 1: Left 50% width -> Hold to Brake
@@ -1078,6 +1200,7 @@
             // Swipe: Overrides taps for steering
             
             window.addEventListener('touchstart', e => {
+                resumeAudio();
                 if(e.target.closest('button')) return; // Ignore buttons
                 
                 touchStartX = e.touches[0].clientX;
