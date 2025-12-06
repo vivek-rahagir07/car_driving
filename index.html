@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>City Driving</title>
+    <title>City Driving: Roadblock</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -13,9 +13,8 @@
             font-family: 'Inter', sans-serif;
             margin: 0;
             overflow: hidden;
-            /* Prevent scrolling and pull-to-refresh on mobile */
             touch-action: none;
-            background-color: #111827; /* Fallback color */
+            background-color: #111827;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -49,12 +48,47 @@
             background-image: linear-gradient(to right, #2563eb, #3b82f6);
         }
 
+        /* Powerup & Status UI */
+        #statusContainer {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            left: auto;
+            transform: none;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .status-badge {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .status-active { opacity: 1; }
+        .shield-active { border-color: #3b82f6; color: #93c5fd; }
+        .magnet-active { border-color: #ef4444; color: #fca5a5; }
+
         /* Driving Tips UI */
         #tipContainer {
             position: absolute;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 20px;
+            right: 20px;
+            left: auto;
+            transform: none;
             background-color: rgba(0, 0, 0, 0.6);
             padding: 8px 16px;
             border-radius: 20px;
@@ -65,12 +99,12 @@
             gap: 8px;
             pointer-events: none;
             transition: opacity 0.5s;
+            z-index: 20;
         }
         
         #tipIcon { font-size: 1.2rem; }
         #tipText { font-size: 0.9rem; font-weight: 500; color: #e5e7eb; }
 
-        /* Mobile Controls Hints */
         .touch-hint {
             position: absolute;
             bottom: 20px;
@@ -84,10 +118,9 @@
         .hint-right { right: 20px; }
 
         @media (max-width: 768px) {
-            .desktop-hint {
-                display: none;
-            }
-            #tipContainer { top: 70px; width: 90%; justify-content: center; }
+            .desktop-hint { display: none; }
+            #tipContainer { top: 15px; right: 15px; width: auto; font-size: 0.8rem; padding: 6px 12px; }
+            #statusContainer { top: 60px; right: 15px; }
         }
     </style>
 </head>
@@ -110,9 +143,18 @@
         <span id="tipText">Conditions Clear: Drive Safely</span>
     </div>
 
+    <!-- Powerup Status -->
+    <div id="statusContainer">
+        <div id="shieldBadge" class="status-badge shield-active">
+            <span>🛡️</span> SHIELD
+        </div>
+        <div id="magnetBadge" class="status-badge magnet-active">
+            <span>🧲</span> MAGNET
+        </div>
+    </div>
+
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Invisible Touch Controls Hints -->
     <div class="touch-hint hint-left md:hidden">Hold Left: Brake</div>
     <div class="touch-hint hint-right md:hidden">Hold Right: Gas</div>
 
@@ -139,15 +181,14 @@
         // --- Sound Manager ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        // Advanced Engine Sound System
-        let engineOsc1 = null; // Main tone
-        let engineOsc2 = null; // Sub bass
-        let engineNoise = null; // Road/Wind texture
-        let engineFilter = null; // Muffler simulation
+        let engineOsc1 = null; 
+        let engineOsc2 = null; 
+        let engineNoise = null; 
+        let engineFilter = null; 
         let engineMasterGain = null;
 
         function createNoiseBuffer() {
-            const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+            const bufferSize = audioCtx.sampleRate * 2;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
             for (let i = 0; i < bufferSize; i++) {
@@ -159,9 +200,8 @@
         const noiseBuffer = createNoiseBuffer();
 
         function startEngine() {
-            if (engineOsc1) return; // Already started
+            if (engineOsc1) return;
             
-            // 1. Create Nodes
             engineOsc1 = audioCtx.createOscillator();
             engineOsc2 = audioCtx.createOscillator();
             engineNoise = audioCtx.createBufferSource();
@@ -169,46 +209,33 @@
             engineFilter = audioCtx.createBiquadFilter();
             engineMasterGain = audioCtx.createGain();
             
-            // 2. Configure Oscillators
-            // Main Engine Tone (Sawtooth for grit)
             engineOsc1.type = 'sawtooth';
             engineOsc1.frequency.value = 60; 
 
-            // Sub Bass (Sine for rumble, one octave down)
             engineOsc2.type = 'sine';
             engineOsc2.frequency.value = 30;
 
-            // Wind/Road Noise
             engineNoise.buffer = noiseBuffer;
             engineNoise.loop = true;
 
-            // 3. Configure Filter (The "Muffler")
             engineFilter.type = 'lowpass';
-            engineFilter.Q.value = 2; // Resonance
+            engineFilter.Q.value = 2;
 
-            // 4. Wiring
-            // Connect tones to filter
             engineOsc1.connect(engineFilter);
             engineOsc2.connect(engineFilter);
             
-            // Connect noise directly to master (wind shouldn't be muffled by engine filter)
             const noiseGain = audioCtx.createGain();
             noiseGain.gain.value = 0.05;
             engineNoise.connect(noiseGain);
             noiseGain.connect(engineMasterGain);
 
-            // Connect Filter to Master
             engineFilter.connect(engineMasterGain);
-
-            // Connect Master to Output
             engineMasterGain.connect(audioCtx.destination);
 
-            // Start everything
             engineOsc1.start();
             engineOsc2.start();
             engineNoise.start();
             
-            // Initial Idle State
             engineMasterGain.gain.value = 0.1;
             engineFilter.frequency.value = 200;
         }
@@ -217,39 +244,28 @@
             if (!engineOsc1) return;
             const now = audioCtx.currentTime;
             
-            // 1. Calculate RPM (Base + Speed factor)
-            // Speed varies ~0.1 to 2.0
             const baseFreq = 60;
-            const rpmMultiplier = 1 + (speed * 3); // Revs go higher now
+            const rpmMultiplier = 1 + (speed * 3);
             const targetFreq = baseFreq * rpmMultiplier;
             const subFreq = targetFreq * 0.5;
 
-            // Smoothly ramp frequency (Pitch)
             engineOsc1.frequency.setTargetAtTime(targetFreq, now, 0.1);
             engineOsc2.frequency.setTargetAtTime(subFreq, now, 0.1);
             
-            // 2. Dynamic Filtering (Timbre)
-            // When slow: Filter is closed (muffled, rumbling sound)
-            // When fast: Filter opens (bright, screaming sound)
             const targetFilterFreq = 200 + (speed * 2000); 
             engineFilter.frequency.setTargetAtTime(targetFilterFreq, now, 0.1);
 
-            // 3. Volume / Load
-            // Engine is louder when ACCELERATING (gas pedal down)
-            // Quieter when coasting
             let targetVol = 0.1;
             if (accelerating) {
-                targetVol = 0.2 + (speed * 0.1); // Gets louder with speed
+                targetVol = 0.2 + (speed * 0.1);
             } else {
-                targetVol = 0.05 + (speed * 0.05); // Quiet rumble
+                targetVol = 0.05 + (speed * 0.05);
             }
             engineMasterGain.gain.setTargetAtTime(targetVol, now, 0.1);
         }
         
         function playSound(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            // Auto-start engine if context is ready and missing
             if (audioCtx.state === 'running' && !engineOsc1) startEngine();
             
             const osc = audioCtx.createOscillator();
@@ -260,29 +276,39 @@
             const now = audioCtx.currentTime;
 
             if (type === 'coin') {
-                // High pitched ding
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(1200, now);
                 osc.frequency.exponentialRampToValueAtTime(2000, now + 0.1);
-                
                 gain.gain.setValueAtTime(0.3, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'powerup') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.1);
+                osc.frequency.linearRampToValueAtTime(1200, now + 0.2);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'break') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
                 osc.start(now);
                 osc.stop(now + 0.3);
             } else if (type === 'boost') {
-                // Rising synth for speed increase
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(200, now);
                 osc.frequency.linearRampToValueAtTime(600, now + 0.3);
-                
                 gain.gain.setValueAtTime(0.2, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                
                 osc.start(now);
                 osc.stop(now + 0.3);
             } else if (type === 'thunder') {
-                // Low Rumble noise
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(40, now);
                 osc.frequency.exponentialRampToValueAtTime(10, now + 0.5);
@@ -290,8 +316,6 @@
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
                 osc.start(now);
                 osc.stop(now + 0.8);
-            } else if (type === 'gas') {
-                 // Removed: The new continuous engine replaces the need for a 'gas' trigger sound
             }
         }
 
@@ -307,6 +331,8 @@
         const restartButton = document.getElementById('restartButton');
         const tipTextEl = document.getElementById('tipText');
         const tipIconEl = document.getElementById('tipIcon');
+        const shieldBadge = document.getElementById('shieldBadge');
+        const magnetBadge = document.getElementById('magnetBadge');
 
         // --- Game Constants ---
         const LANE_COUNT = 3;
@@ -321,13 +347,13 @@
         const PLAYER_Z_POSITION = 15;
         const SPAWN_Z_POSITION = -ROAD_LENGTH * 1.5;
         const DESPAWN_Z_POSITION = PLAYER_Z_POSITION + 20;
-        
-        // Touch Constants
         const SWIPE_THRESHOLD = 30;
 
         // --- Colors ---
         const PLAYER_COLOR = 0x3b82f6;
         const ENEMY_COLORS = [0xef4444, 0xf97316, 0xeab308, 0x8b5cf6, 0xec4899, 0x10b981, 0x6b7280];
+        const POLICE_BODY_COLOR = 0x000000;
+        const POLICE_DOOR_COLOR = 0xffffff;
         const AMBULANCE_LIGHT_COLOR = 0xef4444;
         const GREEN_LIGHT_COLOR = 0x22c55e;
         const RED_LIGHT_COLOR = 0xef4444;
@@ -336,15 +362,16 @@
         const TREE_TRUNK_COLOR = 0x5d4037;
         const TREE_LEAVES_COLOR = 0x2e7d32;
         const BUILDING_COLORS = [0x374151, 0x4b5563, 0x1f2937, 0x111827];
-        const STREET_LIGHT_POLE_COLOR = 0x6b7280;
-        const STREET_LIGHT_BULB_COLOR = 0xfef08a;
         const COIN_COLOR = 0xffd700;
+        const SHIELD_COLOR = 0x06b6d4;
+        const MAGNET_COLOR = 0xf43f5e;
 
         // --- State Variables ---
         let scene, camera, renderer;
-        let playerCar, road;
+        let playerCar, playerShieldMesh;
+        let road;
         let roadLines = [];
-        let enemies = [], ambulances = [], trafficLights = [], scenery = [], coins = [];
+        let enemies = [], ambulances = [], police = [], trafficLights = [], scenery = [], coins = [], powerups = [];
         let particles = [];
         
         let score = 0;
@@ -359,22 +386,24 @@
         let combo = 0;
         let maxCombo = 0;
         let comboTimer = 0;
-
         let lastSpawnZ = SPAWN_Z_POSITION;
         
-        let CANVAS_WIDTH, CANVAS_HEIGHT;
+        // Powerup State
+        let hasShield = false;
+        let hasMagnet = false;
+        let magnetTimer = 0;
+        let invincibleTimer = 0; // Grace period after shield break
         
-        // Input Vars
+        let CANVAS_WIDTH, CANVAS_HEIGHT;
         let touchStartX = 0;
         let touchEndX = 0;
-        let touchTimer = 0;
 
         // Weather System
         let rainSystem;
-        let weatherState = 'CLEAR'; // CLEAR, RAIN, FOG, STORM
+        let weatherState = 'CLEAR'; 
         let weatherTimer = 0;
         let lightningTimer = 0;
-        const WEATHER_CYCLE_DURATION = 800; // Frames approx
+        const WEATHER_CYCLE_DURATION = 800;
 
         // --- Utility Functions ---
         function random(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -384,7 +413,7 @@
         // --- Init & Reset ---
         function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1e293b); // Darker night/evening sky
+            scene.background = new THREE.Color(0x1e293b);
             scene.fog = new THREE.Fog(0x1e293b, 40, 130);
 
             updateCanvasSize();
@@ -396,7 +425,6 @@
             renderer.setSize(CANVAS_WIDTH, CANVAS_HEIGHT);
             renderer.shadowMap.enabled = true;
 
-            // Lights
             const ambientLight = new THREE.HemisphereLight(0x4b5563, 0x111827, 0.6);
             scene.add(ambientLight);
 
@@ -411,7 +439,7 @@
             dirLight.shadow.camera.right = 50;
             scene.add(dirLight);
 
-            // --- Rain System Setup ---
+            // Rain
             const rainCount = 1500;
             const rainGeo = new THREE.BufferGeometry();
             const rainPos = [];
@@ -424,10 +452,7 @@
             }
             rainGeo.setAttribute('position', new THREE.Float32BufferAttribute(rainPos, 3));
             const rainMat = new THREE.PointsMaterial({
-                color: 0xaaaaaa,
-                size: 0.2,
-                transparent: true,
-                opacity: 0.6
+                color: 0xaaaaaa, size: 0.2, transparent: true, opacity: 0.6
             });
             rainSystem = new THREE.Points(rainGeo, rainMat);
             rainSystem.visible = false;
@@ -445,13 +470,11 @@
             // Sidewalks
             const sidewalkGeom = new THREE.PlaneGeometry(5, ROAD_LENGTH * 3);
             const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af });
-            
             const leftWalk = new THREE.Mesh(sidewalkGeom, sidewalkMat);
             leftWalk.rotation.x = -Math.PI / 2;
             leftWalk.position.set(-ROAD_WIDTH/2 - 2.5, 0.02, road.position.z);
             leftWalk.receiveShadow = true;
             scene.add(leftWalk);
-            
             const rightWalk = new THREE.Mesh(sidewalkGeom, sidewalkMat);
             rightWalk.rotation.x = -Math.PI / 2;
             rightWalk.position.set(ROAD_WIDTH/2 + 2.5, 0.02, road.position.z);
@@ -480,10 +503,7 @@
         function resetGame() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-            // Restore engine volume if it exists
-            if (engineMasterGain) {
-                engineMasterGain.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.5);
-            }
+            if (engineMasterGain) engineMasterGain.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.5);
 
             score = 0;
             gameSpeed = 0.3;
@@ -495,32 +515,42 @@
             comboTimer = 0;
             lastSpawnZ = SPAWN_Z_POSITION;
             
-            // Reset Weather
+            // Reset Powerups
+            hasShield = false;
+            hasMagnet = false;
+            magnetTimer = 0;
+            invincibleTimer = 0;
+            shieldBadge.classList.remove('status-active');
+            magnetBadge.classList.remove('status-active');
+            
             weatherTimer = 0;
             setWeather('CLEAR');
 
-            // Cleanup
             if (playerCar) scene.remove(playerCar);
-            [...enemies, ...ambulances, ...trafficLights].forEach(obj => scene.remove(obj.mesh));
-            scenery.forEach(obj => scene.remove(obj.mesh));
-            coins.forEach(obj => scene.remove(obj.mesh));
+            if (playerShieldMesh) scene.remove(playerShieldMesh);
+            
+            [...enemies, ...ambulances, ...police, ...trafficLights, ...scenery, ...coins, ...powerups].forEach(obj => scene.remove(obj.mesh));
             particles.forEach(p => scene.remove(p));
 
-            enemies = []; ambulances = []; trafficLights = []; scenery = []; coins = []; particles = [];
+            enemies = []; ambulances = []; police = []; trafficLights = []; scenery = []; coins = []; powerups = []; particles = [];
 
-            // Pre-spawn scenery
             for (let z = PLAYER_Z_POSITION; z > SPAWN_Z_POSITION * 1.5; z -= 15) {
                 spawnSceneryRow(z);
             }
 
-            // Player Setup
             playerCar = createCar(PLAYER_COLOR, true);
             playerLane = 1;
             playerTargetX = laneToX(playerLane);
             playerCar.position.set(playerTargetX, 0, PLAYER_Z_POSITION);
             scene.add(playerCar);
+            
+            // Create Shield Mesh (Hidden initially)
+            const shieldGeom = new THREE.SphereGeometry(2.5, 16, 16);
+            const shieldMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.3, wireframe: true });
+            playerShieldMesh = new THREE.Mesh(shieldGeom, shieldMat);
+            playerShieldMesh.visible = false;
+            scene.add(playerShieldMesh);
 
-            // UI Reset
             scoreEl.textContent = score;
             speedDisplayEl.textContent = '1.0x';
             comboDisplayEl.classList.add('hidden');
@@ -529,12 +559,9 @@
             animate();
         }
 
-        // --- Weather Logic ---
         function setWeather(type) {
             weatherState = type;
             weatherTimer = WEATHER_CYCLE_DURATION;
-            
-            // Default settings
             scene.background.setHex(0x1e293b);
             scene.fog.color.setHex(0x1e293b);
             scene.fog.near = 40;
@@ -543,84 +570,57 @@
 
             if (type === 'CLEAR') {
                 tipIconEl.textContent = "☀️";
-                tipTextEl.textContent = "Clear Skies: Good visibility. Maintain speed.";
+                tipTextEl.textContent = "Clear Skies: Drive Safely";
             } else if (type === 'FOG') {
-                scene.fog.near = 10;
-                scene.fog.far = 60;
-                scene.fog.color.setHex(0x374151); // Grayish fog
-                scene.background.setHex(0x374151);
+                scene.fog.near = 10; scene.fog.far = 60;
+                scene.fog.color.setHex(0x374151); scene.background.setHex(0x374151);
                 tipIconEl.textContent = "🌫️";
-                tipTextEl.textContent = "Heavy Fog: Low Visibility! Slow down.";
+                tipTextEl.textContent = "Fog: Police are harder to see!";
             } else if (type === 'RAIN') {
-                rainSystem.visible = true;
-                scene.fog.near = 30;
-                scene.fog.far = 90;
+                rainSystem.visible = true; scene.fog.near = 30; scene.fog.far = 90;
                 tipIconEl.textContent = "🌧️";
-                tipTextEl.textContent = "Rain: Roads are slippery. Brake early.";
+                tipTextEl.textContent = "Rain: Braking is less effective.";
             } else if (type === 'STORM') {
-                rainSystem.visible = true;
-                scene.fog.near = 20;
-                scene.fog.far = 70;
-                scene.background.setHex(0x111827); // Very dark
-                scene.fog.color.setHex(0x111827);
+                rainSystem.visible = true; scene.fog.near = 20; scene.fog.far = 70;
+                scene.background.setHex(0x111827); scene.fog.color.setHex(0x111827);
                 tipIconEl.textContent = "⛈️";
-                tipTextEl.textContent = "Thunderstorm: Drive carefully!";
+                tipTextEl.textContent = "Storm: Watch out for reckless drivers!";
             }
         }
 
         function updateWeather(speed) {
-            // Cycle Weather
             weatherTimer--;
             if (weatherTimer <= 0) {
                 const states = ['CLEAR', 'FOG', 'RAIN', 'STORM'];
                 let next = states[random(0, states.length - 1)];
-                // Avoid repeating same weather immediately unless random chance
                 if(next === weatherState && Math.random() > 0.3) next = 'CLEAR';
                 setWeather(next);
             }
-
-            // Rain Animation
             if (weatherState === 'RAIN' || weatherState === 'STORM') {
                 const positions = rainSystem.geometry.attributes.position.array;
                 for(let i=1; i<positions.length; i+=3) {
-                    positions[i] -= 1.5; // Fall Speed
-                    // Reset if below road
+                    positions[i] -= 1.5;
                     if (positions[i] < 0) {
                         positions[i] = 40;
-                        positions[i-1] = randomFloat(-50, 50); // Random X
-                        positions[i+1] = randomFloat(PLAYER_Z_POSITION - 20, PLAYER_Z_POSITION + 30); // Random Z around player
+                        positions[i-1] = randomFloat(-50, 50);
+                        positions[i+1] = randomFloat(PLAYER_Z_POSITION - 20, PLAYER_Z_POSITION + 30);
                     }
                 }
                 rainSystem.geometry.attributes.position.needsUpdate = true;
-                
-                // Keep rain system centered on player Z approx
                 rainSystem.position.z = playerCar.position.z - PLAYER_Z_POSITION; 
-                // Actually, our player stays at Z=15 fixed world space usually, but objects move. 
-                // In this code, player is fixed Z, road moves? 
-                // Wait, in `updateRoadLines` line.z changes.
-                // In `updateGameObjects` enemy.z changes.
-                // So the player is STATIC in Z. The world moves towards +Z (scenery spawns at -Z and moves +Z)
-                // So rain should just fall in place relative to camera.
             }
-
-            // Lightning Logic
             if (weatherState === 'STORM') {
                 if (lightningTimer > 0) {
                     lightningTimer--;
                     if (lightningTimer === 0) {
-                        // End flash
                         scene.background.setHex(0x111827);
                         scene.fog.color.setHex(0x111827);
                     }
-                } else {
-                    // Random chance to strike
-                    if (Math.random() < 0.005) {
-                        // Flash!
-                        playSound('thunder');
-                        scene.background.setHex(0x4b5563); // Bright flash color
-                        scene.fog.color.setHex(0x4b5563);
-                        lightningTimer = random(5, 10);
-                    }
+                } else if (Math.random() < 0.005) {
+                    playSound('thunder');
+                    scene.background.setHex(0x4b5563);
+                    scene.fog.color.setHex(0x4b5563);
+                    lightningTimer = random(5, 10);
                 }
             }
         }
@@ -631,227 +631,206 @@
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
             const bodyMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.6, roughness: 0.2 });
 
-            // Chassis
             const chassisHeight = CAR_BODY_HEIGHT * 0.8;
-            const chassisGeom = new THREE.BoxGeometry(CAR_BODY_WIDTH, chassisHeight, CAR_BODY_DEPTH);
-            const chassis = new THREE.Mesh(chassisGeom, bodyMat);
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(CAR_BODY_WIDTH, chassisHeight, CAR_BODY_DEPTH), bodyMat);
             chassis.position.y = WHEEL_RADIUS + chassisHeight / 2;
             chassis.castShadow = true;
             chassis.receiveShadow = true;
             car.add(chassis);
 
-            // Cabin
-            const cabinHeight = CAR_BODY_HEIGHT * 0.7;
-            const cabinWidth = CAR_BODY_WIDTH * 0.7;
-            const cabinDepth = CAR_BODY_DEPTH * 0.35;
-            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.1 });
-            const cabinGeom = new THREE.BoxGeometry(cabinWidth, cabinHeight, cabinDepth);
-            const cabin = new THREE.Mesh(cabinGeom, cabinMat);
-            cabin.position.set(0, chassis.position.y + chassisHeight / 2 + cabinHeight / 2 - 0.1, isPlayer ? 0.5 : -0.5);
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(CAR_BODY_WIDTH * 0.7, CAR_BODY_HEIGHT * 0.7, CAR_BODY_DEPTH * 0.35), new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.1 }));
+            cabin.position.set(0, chassis.position.y + chassisHeight / 2 + CAR_BODY_HEIGHT * 0.35 - 0.1, isPlayer ? 0.5 : -0.5);
             cabin.castShadow = true;
             car.add(cabin);
 
-            // Headlights
             if (isPlayer) {
-                const headLightGeom = new THREE.BoxGeometry(0.5, 0.2, 0.1);
-                const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2 });
-                const hlLeft = new THREE.Mesh(headLightGeom, headLightMat);
+                const hlMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2 });
+                const hlLeft = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.1), hlMat);
                 hlLeft.position.set(-0.8, chassis.position.y + 0.1, -CAR_BODY_DEPTH/2 - 0.05);
                 car.add(hlLeft);
-                const hlRight = new THREE.Mesh(headLightGeom, headLightMat);
+                const hlRight = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.1), hlMat);
                 hlRight.position.set(0.8, chassis.position.y + 0.1, -CAR_BODY_DEPTH/2 - 0.05);
                 car.add(hlRight);
                 
-                // Spotlights for night driving feel
                 const spotL = new THREE.SpotLight(0xffffff, 2, 40, 0.5, 0.5, 1);
                 spotL.position.set(-0.8, chassis.position.y + 0.1, -CAR_BODY_DEPTH/2);
                 spotL.target.position.set(-0.8, 0, -20);
-                car.add(spotL);
-                car.add(spotL.target);
-                
+                car.add(spotL); car.add(spotL.target);
                 const spotR = new THREE.SpotLight(0xffffff, 2, 40, 0.5, 0.5, 1);
                 spotR.position.set(0.8, chassis.position.y + 0.1, -CAR_BODY_DEPTH/2);
                 spotR.target.position.set(0.8, 0, -20);
-                car.add(spotR);
-                car.add(spotR.target);
+                car.add(spotR); car.add(spotR.target);
             } else {
-                 // Taillights for enemies
-                const tailLightGeom = new THREE.BoxGeometry(0.5, 0.2, 0.1);
-                const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1 });
-                const tlLeft = new THREE.Mesh(tailLightGeom, tailLightMat);
+                const tlMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1 });
+                const tlLeft = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.1), tlMat);
                 tlLeft.position.set(-0.8, chassis.position.y + 0.2, CAR_BODY_DEPTH/2 + 0.05);
                 car.add(tlLeft);
-                const tlRight = new THREE.Mesh(tailLightGeom, tailLightMat);
+                const tlRight = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.1), tlMat);
                 tlRight.position.set(0.8, chassis.position.y + 0.2, CAR_BODY_DEPTH/2 + 0.05);
                 car.add(tlRight);
             }
 
-            // Wheels
             const wheelGeom = new THREE.CylinderGeometry(WHEEL_RADIUS, WHEEL_RADIUS, WHEEL_THICKNESS, 16);
             wheelGeom.rotateZ(Math.PI / 2);
-            [
-                { x: -1, z: 0.7 }, { x: 1, z: 0.7 }, { x: -1, z: -0.7 }, { x: 1, z: -0.7 }
-            ].forEach(offset => {
+            [{ x: -1, z: 0.7 }, { x: 1, z: 0.7 }, { x: -1, z: -0.7 }, { x: 1, z: -0.7 }].forEach(offset => {
                 const w = new THREE.Mesh(wheelGeom, wheelMat);
                 w.position.set(offset.x * (CAR_BODY_WIDTH / 2), WHEEL_RADIUS, offset.z * (CAR_BODY_DEPTH / 2));
-                w.castShadow = true;
                 car.add(w);
             });
 
             car.userData.box = new THREE.Box3().setFromObject(chassis);
             return car;
         }
+        
+        function createPoliceCar() {
+            const car = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: POLICE_BODY_COLOR, metalness: 0.7, roughness: 0.2 });
+            const whiteMat = new THREE.MeshStandardMaterial({ color: POLICE_DOOR_COLOR, metalness: 0.5 });
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
 
-        function createTree() {
-            const group = new THREE.Group();
+            // Body
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(CAR_BODY_WIDTH, 1, CAR_BODY_DEPTH), bodyMat);
+            chassis.position.y = 0.8;
+            chassis.castShadow = true;
+            car.add(chassis);
             
-            // Trunk
-            const trunkGeom = new THREE.CylinderGeometry(0.4, 0.5, 2, 6);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: TREE_TRUNK_COLOR });
-            const trunk = new THREE.Mesh(trunkGeom, trunkMat);
-            trunk.position.y = 1;
-            trunk.castShadow = true;
-            group.add(trunk);
+            // White Doors
+            const door = new THREE.Mesh(new THREE.BoxGeometry(CAR_BODY_WIDTH + 0.05, 0.6, 2), whiteMat);
+            door.position.y = 0.8;
+            car.add(door);
+
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(CAR_BODY_WIDTH * 0.7, 0.6, 2), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+            cabin.position.set(0, 1.5, 0);
+            car.add(cabin);
+
+            // Siren
+            const sirenBar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.3), new THREE.MeshStandardMaterial({ color: 0x555555 }));
+            sirenBar.position.set(0, 1.85, 0);
+            car.add(sirenBar);
+
+            const redLight = new THREE.PointLight(0xff0000, 1, 10);
+            redLight.position.set(-0.4, 1.9, 0);
+            car.add(redLight);
             
-            // Leaves
-            const leavesGeom = new THREE.DodecahedronGeometry(1.5);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: TREE_LEAVES_COLOR });
-            const leaves = new THREE.Mesh(leavesGeom, leavesMat);
-            leaves.position.y = 2.8;
-            leaves.castShadow = true;
-            group.add(leaves);
-            
-            return group;
+            const blueLight = new THREE.PointLight(0x0000ff, 1, 10);
+            blueLight.position.set(0.4, 1.9, 0);
+            car.add(blueLight);
+
+            // Wheels
+            const wheelGeom = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 16);
+            wheelGeom.rotateZ(Math.PI / 2);
+            [{ x: -1, z: 0.7 }, { x: 1, z: 0.7 }, { x: -1, z: -0.7 }, { x: 1, z: -0.7 }].forEach(offset => {
+                const w = new THREE.Mesh(wheelGeom, wheelMat);
+                w.position.set(offset.x * 1.3, 0.5, offset.z * 2.2);
+                car.add(w);
+            });
+
+            car.userData.box = new THREE.Box3().setFromObject(chassis);
+            car.userData.lights = { red: redLight, blue: blueLight };
+            car.userData.isPolice = true;
+            return car;
         }
 
-        function createBuilding() {
-            const height = randomFloat(8, 20);
-            const width = randomFloat(5, 10);
-            const depth = randomFloat(5, 10);
-            const color = BUILDING_COLORS[random(0, BUILDING_COLORS.length-1)];
+        function createPowerup(type) {
+            const group = new THREE.Group();
+            let mesh;
             
-            const geom = new THREE.BoxGeometry(width, height, depth);
-            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.9 });
-            const mesh = new THREE.Mesh(geom, mat);
-            mesh.position.y = height / 2;
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            
-            // Simple windows (emissive dots)
-            if (Math.random() > 0.3) {
-                 const winGeom = new THREE.PlaneGeometry(0.5, 0.5);
-                 const winMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
-                 for(let y = 2; y < height - 1; y += 2) {
-                     for(let x = -width/2 + 1; x < width/2; x+=2) {
-                         if(Math.random() > 0.4) {
-                             const win = new THREE.Mesh(winGeom, winMat);
-                             win.position.set(x, y, depth/2 + 0.05);
-                             mesh.add(win);
-                         }
-                     }
-                 }
+            if (type === 'SHIELD') {
+                const geom = new THREE.IcosahedronGeometry(0.6, 0);
+                const mat = new THREE.MeshStandardMaterial({ color: SHIELD_COLOR, emissive: SHIELD_COLOR, emissiveIntensity: 0.5 });
+                mesh = new THREE.Mesh(geom, mat);
+            } else { // MAGNET
+                const geom = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+                const mat = new THREE.MeshStandardMaterial({ color: MAGNET_COLOR, emissive: MAGNET_COLOR, emissiveIntensity: 0.5 });
+                mesh = new THREE.Mesh(geom, mat);
             }
             
-            return mesh;
-        }
-
-        function createStreetLight() {
-            const group = new THREE.Group();
-            
-            // Pole
-            const poleGeom = new THREE.CylinderGeometry(0.1, 0.1, 8, 6);
-            const poleMat = new THREE.MeshStandardMaterial({ color: STREET_LIGHT_POLE_COLOR });
-            const pole = new THREE.Mesh(poleGeom, poleMat);
-            pole.position.y = 4;
-            pole.castShadow = true;
-            group.add(pole);
-            
-            // Arm
-            const armGeom = new THREE.BoxGeometry(2, 0.1, 0.1);
-            const arm = new THREE.Mesh(armGeom, poleMat);
-            arm.position.set(0.8, 7.8, 0);
-            group.add(arm);
-            
-            // Bulb Mesh
-            const bulbGeom = new THREE.BoxGeometry(0.5, 0.1, 0.3);
-            const bulbMat = new THREE.MeshStandardMaterial({ color: STREET_LIGHT_BULB_COLOR, emissive: STREET_LIGHT_BULB_COLOR, emissiveIntensity: 2 });
-            const bulb = new THREE.Mesh(bulbGeom, bulbMat);
-            bulb.position.set(1.5, 7.7, 0);
-            group.add(bulb);
-            
-            // Actual Light
-            const spot = new THREE.SpotLight(0xffaa00, 1.5, 15, 0.8, 0.5, 1);
-            spot.position.set(1.5, 7.5, 0);
-            spot.target.position.set(1.5, 0, 0);
-            group.add(spot);
-            group.add(spot.target);
-            
-            return group;
-        }
-
-        function createAmbulance() {
-            const ambu = createCar(0xffffff);
-            const lightGeom = new THREE.BoxGeometry(0.5, 0.3, 0.5);
-            const lightMat = new THREE.MeshStandardMaterial({ color: AMBULANCE_LIGHT_COLOR, emissive: AMBULANCE_LIGHT_COLOR, emissiveIntensity: 2 });
-            const light = new THREE.Mesh(lightGeom, lightMat);
-            light.position.y = 2.2; 
-            ambu.add(light);
-            ambu.userData.flashingLight = light;
-            ambu.userData.isAmbulance = true;
-            return ambu;
-        }
-
-        function createTrafficLight(type) {
-            const group = new THREE.Group();
-            const color = (type === 'GREEN') ? GREEN_LIGHT_COLOR : RED_LIGHT_COLOR;
-            const geom = new THREE.CylinderGeometry(LANE_WIDTH * 0.4, LANE_WIDTH * 0.4, 0.2, 16);
-            const mat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 2 });
-            const mesh = new THREE.Mesh(geom, mat);
-            mesh.rotation.x = Math.PI / 2;
-            mesh.position.y = 0.5;
+            // REMOVED: mesh.position.y = 1;  <-- This was the bug causing it to be too high
+            mesh.castShadow = true;
             group.add(mesh);
             
-            // Halo
-            const ringGeom = new THREE.RingGeometry(LANE_WIDTH * 0.4, LANE_WIDTH * 0.5, 16);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-            const ring = new THREE.Mesh(ringGeom, ringMat);
-            ring.rotation.x = -Math.PI / 2;
-            ring.position.y = 0.1;
-            group.add(ring);
-
+            // Floating animation done in update
             group.userData.box = new THREE.Box3().setFromObject(mesh);
             group.userData.type = type;
             return group;
         }
 
-        function createCoin() {
-            const coinGeom = new THREE.CylinderGeometry(0.7, 0.7, 0.1, 16);
-            const coinMat = new THREE.MeshStandardMaterial({ color: COIN_COLOR, metalness: 1, roughness: 0.2, emissive: 0xaa8800, emissiveIntensity: 0.4 });
-            const coin = new THREE.Mesh(coinGeom, coinMat);
-            coin.rotation.x = Math.PI / 2;
-            
+        // Reuse existing create functions for scenery...
+        function createTree() {
             const group = new THREE.Group();
-            group.add(coin);
-            group.userData.box = new THREE.Box3().setFromObject(coin);
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 2, 6), new THREE.MeshStandardMaterial({ color: TREE_TRUNK_COLOR }));
+            trunk.position.y = 1;
+            group.add(trunk);
+            const leaves = new THREE.Mesh(new THREE.DodecahedronGeometry(1.5), new THREE.MeshStandardMaterial({ color: TREE_LEAVES_COLOR }));
+            leaves.position.y = 2.8;
+            group.add(leaves);
             return group;
         }
-
+        function createBuilding() {
+            const h = randomFloat(8, 20);
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(randomFloat(5,10), h, randomFloat(5,10)), new THREE.MeshStandardMaterial({ color: BUILDING_COLORS[random(0,3)], roughness: 0.9 }));
+            mesh.position.y = h/2;
+            return mesh;
+        }
+        function createStreetLight() {
+            const group = new THREE.Group();
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 8, 6), new THREE.MeshStandardMaterial({ color: 0x6b7280 }));
+            pole.position.y = 4; group.add(pole);
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 0.1), new THREE.MeshStandardMaterial({ color: 0x6b7280 }));
+            arm.position.set(0.8, 7.8, 0); group.add(arm);
+            const bulb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.3), new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfef08a }));
+            bulb.position.set(1.5, 7.7, 0); group.add(bulb);
+            return group;
+        }
+        function createAmbulance() {
+            const a = createCar(0xffffff);
+            const l = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: AMBULANCE_LIGHT_COLOR, emissive: AMBULANCE_LIGHT_COLOR }));
+            l.position.y = 2.2; a.add(l); a.userData.flashingLight = l; a.userData.isAmbulance = true;
+            return a;
+        }
+        function createTrafficLight(type) {
+            const g = new THREE.Group(); const c = (type==='GREEN')?0x22c55e:0xef4444;
+            const m = new THREE.Mesh(new THREE.CylinderGeometry(2,2,0.2,16), new THREE.MeshStandardMaterial({ color: c, emissive:c }));
+            m.rotation.x = Math.PI/2; m.position.y=0.5; g.add(m);
+            const r = new THREE.Mesh(new THREE.RingGeometry(2,2.5,16), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+            r.rotation.x = -Math.PI/2; r.position.y=0.1; g.add(r);
+            g.userData.box = new THREE.Box3().setFromObject(m); g.userData.type = type; return g;
+        }
+        function createCoin() {
+            const c = new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.7,0.1,16), new THREE.MeshStandardMaterial({ color: COIN_COLOR, emissive: 0xaa8800, emissiveIntensity: 0.4 }));
+            c.rotation.x = Math.PI/2; const g = new THREE.Group(); g.add(c); g.userData.box = new THREE.Box3().setFromObject(c); return g;
+        }
         function createParticle(pos, color) {
-            const geom = new THREE.SphereGeometry(0.2, 4, 4);
-            const mat = new THREE.MeshBasicMaterial({ color: color });
-            const p = new THREE.Mesh(geom, mat);
-            p.position.copy(pos);
-            p.userData.vel = new THREE.Vector3(randomFloat(-1, 1), randomFloat(1, 3), randomFloat(-1, 1));
-            p.userData.life = 1.0;
-            scene.add(p);
-            particles.push(p);
+            const p = new THREE.Mesh(new THREE.SphereGeometry(0.2,4,4), new THREE.MeshBasicMaterial({ color: color }));
+            p.position.copy(pos); p.userData.vel = new THREE.Vector3(randomFloat(-1,1), randomFloat(1,3), randomFloat(-1,1)); p.userData.life = 1.0;
+            scene.add(p); particles.push(p);
         }
 
         // --- Updates ---
         function updatePlayer() {
             playerCar.position.x += (playerTargetX - playerCar.position.x) * 0.15;
-            playerCar.rotation.z = (playerTargetX - playerCar.position.x) * -0.05; // Tilt
+            playerCar.rotation.z = (playerTargetX - playerCar.position.x) * -0.05;
+            
+            // Fix: Update matrix world BEFORE setting collision box
+            playerCar.updateMatrixWorld();
             playerCar.userData.box.setFromObject(playerCar.children[0]);
+            
+            // Update Shield Visuals
+            playerShieldMesh.position.copy(playerCar.position);
+            playerShieldMesh.position.y += 1; // Center it
+            playerShieldMesh.rotation.y += 0.05;
+            playerShieldMesh.visible = hasShield;
+            
+            if (invincibleTimer > 0) invincibleTimer--;
+            
+            // Update Magnet Timer
+            if (hasMagnet) {
+                magnetTimer--;
+                if (magnetTimer <= 0) {
+                    hasMagnet = false;
+                    magnetBadge.classList.remove('status-active');
+                }
+            }
         }
 
         function updateRoadLines(speed) {
@@ -865,7 +844,7 @@
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.position.add(p.userData.vel);
-                p.userData.vel.y -= 0.1; // Gravity
+                p.userData.vel.y -= 0.1;
                 p.userData.life -= 0.03;
                 p.scale.setScalar(p.userData.life);
                 if (p.userData.life <= 0) {
@@ -875,170 +854,170 @@
             }
         }
 
-        function updateGameObjects(speed) {
-            // Combo timer
-            if (comboTimer > 0) {
-                comboTimer--;
-                if (comboTimer === 0) {
-                    combo = 0;
-                    comboDisplayEl.classList.add('hidden');
-                }
+        function handleCollision(obj, type) {
+            // Invincibility Logic
+            if (invincibleTimer > 0 && type !== 'COIN' && type !== 'POWERUP' && type !== 'GREEN_LIGHT') {
+                return true; // Ignore collision
             }
 
-            // Scenery
-            for (let i = scenery.length - 1; i >= 0; i--) {
-                let s = scenery[i];
-                s.mesh.position.z += speed;
-                if (s.mesh.position.z > DESPAWN_Z_POSITION) {
-                    scene.remove(s.mesh);
-                    scenery.splice(i, 1);
-                }
+            // Shield Logic
+            if (hasShield && type !== 'COIN' && type !== 'POWERUP' && type !== 'GREEN_LIGHT') {
+                hasShield = false;
+                shieldBadge.classList.remove('status-active');
+                playSound('break');
+                spawnExplosion(obj.position, SHIELD_COLOR, 15);
+                invincibleTimer = 60; // 1 second grace period
+                return true; // Collision absorbed
             }
+            return false;
+        }
+
+        function updateGameObjects(speed) {
+            if (comboTimer > 0) {
+                comboTimer--;
+                if (comboTimer === 0) { combo = 0; comboDisplayEl.classList.add('hidden'); }
+            }
+
+            scenery.forEach((s, i) => {
+                s.mesh.position.z += speed;
+                if (s.mesh.position.z > DESPAWN_Z_POSITION) { scene.remove(s.mesh); scenery.splice(i, 1); }
+            });
 
             // Enemies
             for (let i = enemies.length - 1; i >= 0; i--) {
                 let e = enemies[i];
                 e.mesh.position.z += speed;
+                e.mesh.updateMatrixWorld(); // Fix: Update matrix
                 e.mesh.userData.box.setFromObject(e.mesh.children[0]);
-
-                if (checkCollision(playerCar, e.mesh)) return endGame();
-
-                if (e.mesh.position.z > DESPAWN_Z_POSITION) {
-                    // Score & Near Miss
-                    score += 10;
-                    scene.remove(e.mesh);
-                    enemies.splice(i, 1);
+                if (checkCollision(playerCar, e.mesh)) {
+                    if (handleCollision(e.mesh, 'ENEMY')) {
+                        if (invincibleTimer === 60) { // Only remove if shield just broke
+                             scene.remove(e.mesh); enemies.splice(i, 1);
+                        }
+                    } else return endGame();
+                } else if (e.mesh.position.z > DESPAWN_Z_POSITION) {
+                    score += 10; scene.remove(e.mesh); enemies.splice(i, 1);
                 }
             }
 
-            // Ambulances
-            for (let i = ambulances.length - 1; i >= 0; i--) {
-                let a = ambulances[i];
-                a.mesh.position.z += speed * 1.5;
-                a.mesh.userData.box.setFromObject(a.mesh.children[0]);
-                a.mesh.userData.flashingLight.visible = Math.floor(Date.now() / 150) % 2 === 0;
+            // Police Logic (Roadblock Behavior - Option 1)
+            for (let i = police.length - 1; i >= 0; i--) {
+                let p = police[i];
+                // Move with the road (stationary obstacle)
+                p.mesh.position.z += speed; 
+                
+                // Flashing lights
+                const flash = Math.floor(Date.now() / 100) % 2 === 0;
+                p.mesh.userData.lights.red.intensity = flash ? 2 : 0;
+                p.mesh.userData.lights.blue.intensity = flash ? 0 : 2;
 
-                if (checkCollision(playerCar, a.mesh)) return endGame();
-                if (a.mesh.position.z > DESPAWN_Z_POSITION) {
-                    scene.remove(a.mesh);
-                    ambulances.splice(i, 1);
+                p.mesh.updateMatrixWorld();
+                p.mesh.userData.box.setFromObject(p.mesh.children[0]);
+
+                if (checkCollision(playerCar, p.mesh)) {
+                    if (handleCollision(p.mesh, 'POLICE')) {
+                        if (invincibleTimer === 60) {
+                            scene.remove(p.mesh); police.splice(i, 1);
+                        }
+                    } else return endGame();
+                } else if (p.mesh.position.z > DESPAWN_Z_POSITION) {
+                    scene.remove(p.mesh); police.splice(i, 1);
                 }
             }
 
-            // Traffic Lights
-            for (let i = trafficLights.length - 1; i >= 0; i--) {
-                let t = trafficLights[i];
-                t.mesh.position.z += speed;
-                t.mesh.userData.box.setFromObject(t.mesh.children[0]);
+            // Powerups
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                let p = powerups[i];
+                p.mesh.position.z += speed;
+                p.mesh.rotation.y += 0.05;
+                // Lowered base height from 1.0 to 0.8 to ensure collision with car body
+                p.mesh.position.y = 0.8 + Math.sin(Date.now() * 0.005) * 0.2;
+                p.mesh.updateMatrixWorld(); // Fix
+                p.mesh.userData.box.setFromObject(p.mesh.children[0]);
 
-                if (checkCollision(playerCar, t.mesh)) {
-                    if (t.type === 'GREEN') {
-                        score += 50;
-                        combo++;
-                        comboTimer = 180;
-                        comboDisplayEl.classList.remove('hidden');
-                        comboValueEl.textContent = combo;
-                        playSound('boost');
-                        scene.remove(t.mesh);
-                        trafficLights.splice(i, 1);
-                        spawnExplosion(t.mesh.position, GREEN_LIGHT_COLOR, 5);
-                    } else {
-                        return endGame();
+                if (checkCollision(playerCar, p.mesh)) {
+                    playSound('powerup');
+                    if (p.type === 'SHIELD') {
+                        hasShield = true;
+                        shieldBadge.classList.add('status-active');
+                    } else if (p.type === 'MAGNET') {
+                        hasMagnet = true;
+                        magnetTimer = 600; // 10 seconds approx
+                        magnetBadge.classList.add('status-active');
                     }
-                } else if (t.mesh.position.z > DESPAWN_Z_POSITION) {
-                    scene.remove(t.mesh);
-                    trafficLights.splice(i, 1);
+                    scene.remove(p.mesh); powerups.splice(i, 1);
+                } else if (p.mesh.position.z > DESPAWN_Z_POSITION) {
+                    scene.remove(p.mesh); powerups.splice(i, 1);
                 }
             }
 
-            // Coins
+            // Coins (Magnet Logic)
             for (let i = coins.length - 1; i >= 0; i--) {
                 let c = coins[i];
                 c.mesh.position.z += speed;
                 c.mesh.rotation.y += 0.1;
+                
+                // Enhanced Magnet Logic
+                if (hasMagnet && c.mesh.position.z > -50 && c.mesh.position.z < 30) {
+                    // Stronger Pull
+                    c.mesh.position.x += (playerCar.position.x - c.mesh.position.x) * 0.25;
+                    c.mesh.position.z += (playerCar.position.z - c.mesh.position.z) * 0.25;
+                }
+
+                c.mesh.updateMatrixWorld(); // Fix
                 c.mesh.userData.box.setFromObject(c.mesh.children[0]);
 
                 if (checkCollision(playerCar, c.mesh)) {
-                    score += 25;
-                    gameSpeed += 0.005; // Slightly increase speed when collecting coin
-                    playSound('coin');
+                    score += 25; gameSpeed += 0.005; playSound('coin');
                     spawnExplosion(c.mesh.position, COIN_COLOR, 4);
-                    scene.remove(c.mesh);
-                    coins.splice(i, 1);
+                    scene.remove(c.mesh); coins.splice(i, 1);
                 } else if (c.mesh.position.z > DESPAWN_Z_POSITION) {
-                    scene.remove(c.mesh);
-                    coins.splice(i, 1);
+                    scene.remove(c.mesh); coins.splice(i, 1);
                 }
             }
+            
+            // Ambulances & Lights (Standard logic)
+            ambulances.forEach((a,i) => {
+                 a.mesh.position.z += speed * 1.5;
+                 a.mesh.updateMatrixWorld(); // Fix
+                 a.mesh.userData.box.setFromObject(a.mesh.children[0]);
+                 a.mesh.userData.flashingLight.visible = Math.floor(Date.now()/150)%2===0;
+                 if(checkCollision(playerCar, a.mesh)) { if(handleCollision(a.mesh,'AMB')) {if(invincibleTimer===60) {scene.remove(a.mesh);ambulances.splice(i,1);}} else endGame();}
+                 else if(a.mesh.position.z > DESPAWN_Z_POSITION) { scene.remove(a.mesh); ambulances.splice(i,1); }
+            });
+            trafficLights.forEach((t,i) => {
+                t.mesh.position.z += speed;
+                t.mesh.updateMatrixWorld(); // Fix
+                t.mesh.userData.box.setFromObject(t.mesh.children[0]);
+                if(checkCollision(playerCar, t.mesh)) {
+                    if(t.type==='GREEN') { score+=50; combo++; comboTimer=180; comboDisplayEl.classList.remove('hidden'); comboValueEl.textContent=combo; playSound('boost'); scene.remove(t.mesh); trafficLights.splice(i,1); spawnExplosion(t.mesh.position, GREEN_LIGHT_COLOR, 5);}
+                    else { if(handleCollision(t.mesh,'RED')) {if(invincibleTimer===60){scene.remove(t.mesh); trafficLights.splice(i,1);}} else endGame(); }
+                } else if(t.mesh.position.z > DESPAWN_Z_POSITION) { scene.remove(t.mesh); trafficLights.splice(i,1); }
+            });
         }
 
         function checkCollision(a, b) {
             return a.userData.box && b.userData.box && a.userData.box.intersectsBox(b.userData.box);
         }
+        function spawnExplosion(pos, color, count) { for (let i = 0; i < count; i++) createParticle(pos, color); }
 
-        function spawnExplosion(pos, color, count) {
-            for (let i = 0; i < count; i++) createParticle(pos, color);
-        }
-
-        // --- Spawning Logic ---
+        // --- Spawning ---
         function spawnSceneryRow(zPos) {
-             // Left Side
-             if (Math.random() > 0.3) {
-                 const type = Math.random();
-                 let mesh;
-                 let xPos = -ROAD_WIDTH/2 - 5 - randomFloat(0, 5);
-                 
-                 if (type < 0.2) { // Streetlight
-                     mesh = createStreetLight();
-                     xPos = -ROAD_WIDTH/2 - 2.5; // Closer to road
-                     mesh.rotation.y = -Math.PI / 2; // Face road
-                 } else if (type < 0.6) { // Tree
-                     mesh = createTree();
-                 } else { // Building
-                     mesh = createBuilding();
-                     xPos -= 10; // Further back
+             [1, -1].forEach(side => {
+                 if (Math.random() > 0.3) {
+                     const type = Math.random();
+                     let mesh;
+                     let xPos = (side * ROAD_WIDTH/2) + (side * 5) + (side * randomFloat(0, 5));
+                     if (type < 0.2) { mesh = createStreetLight(); xPos = side * (ROAD_WIDTH/2 + 2.5); mesh.rotation.y = side * -Math.PI/2; }
+                     else if (type < 0.6) mesh = createTree();
+                     else { mesh = createBuilding(); xPos += side * 10; }
+                     mesh.position.set(xPos, 0, zPos); scene.add(mesh); scenery.push({ mesh });
                  }
-                 mesh.position.set(xPos, 0, zPos);
-                 scene.add(mesh);
-                 scenery.push({ mesh });
-             }
-             
-             // Right Side
-             if (Math.random() > 0.3) {
-                 const type = Math.random();
-                 let mesh;
-                 let xPos = ROAD_WIDTH/2 + 5 + randomFloat(0, 5);
-                 
-                 if (type < 0.2) { // Streetlight
-                     mesh = createStreetLight();
-                     xPos = ROAD_WIDTH/2 + 2.5;
-                     mesh.rotation.y = Math.PI / 2; // Face road
-                 } else if (type < 0.6) { // Tree
-                     mesh = createTree();
-                 } else { // Building
-                     mesh = createBuilding();
-                     xPos += 10;
-                 }
-                 mesh.position.set(xPos, 0, zPos);
-                 scene.add(mesh);
-                 scenery.push({ mesh });
-             }
+             });
         }
 
         function spawnObjects() {
-            // Spawn Scenery regularly based on distance traveled approximation
-            if (lastSpawnZ > SPAWN_Z_POSITION + 15) { 
-                // Using frames/speed to approx distance is tricky with variable speed.
-                // Instead, we just spawn randomly each frame but check logic
-            }
-            
-            // Just reuse spawn timer logic or random check
-            if (Math.random() < 0.05 + gameSpeed * 0.02) {
-                // Determine Z position based on the "furthest back" object to prevent gaps?
-                // For simplicity in this runner style, we spawn at fixed distance relative to world
-                // But since world moves (objects move +z), we spawn at fixed negative Z.
-                spawnSceneryRow(SPAWN_Z_POSITION);
-            }
+            if (Math.random() < 0.05 + gameSpeed * 0.02) spawnSceneryRow(SPAWN_Z_POSITION);
 
             // Enemies
             if (Math.random() < 0.01 + gameSpeed * 0.01) {
@@ -1046,122 +1025,118 @@
                 if (isLaneClear(lane)) {
                     const mesh = createCar(ENEMY_COLORS[random(0, ENEMY_COLORS.length - 1)]);
                     mesh.position.set(laneToX(lane), 0, SPAWN_Z_POSITION);
-                    enemies.push({ mesh, lane });
-                    scene.add(mesh);
+                    enemies.push({ mesh, lane }); scene.add(mesh);
                     lastSpawnZ = SPAWN_Z_POSITION;
                 }
             }
 
-            // Ambulances
+            // Police Roadblocks (Dangerous)
+            if (Math.random() < 0.005) { 
+                // Pick a safe lane
+                const safeLane = random(0, LANE_COUNT - 1);
+                
+                if (isLaneClear(0) && isLaneClear(1) && isLaneClear(2)) {
+                    // Spawn blocking cars
+                    for(let l=0; l<LANE_COUNT; l++) {
+                        if (l !== safeLane) {
+                            const mesh = createPoliceCar();
+                            mesh.position.set(laneToX(l), 0, SPAWN_Z_POSITION);
+                            // Rotate sideways
+                            mesh.rotation.y = Math.PI / 2;
+                            police.push({ mesh, lane: l }); 
+                            scene.add(mesh);
+                        }
+                    }
+                    lastSpawnZ = SPAWN_Z_POSITION;
+                }
+            }
+            
+            // Powerups (Rare)
+            if (Math.random() < 0.003) {
+                const lane = random(0, LANE_COUNT - 1);
+                if (isLaneClear(lane)) {
+                    const type = Math.random() > 0.5 ? 'SHIELD' : 'MAGNET';
+                    const mesh = createPowerup(type);
+                    mesh.position.set(laneToX(lane), 0, SPAWN_Z_POSITION);
+                    powerups.push({ mesh, lane, type }); scene.add(mesh);
+                    lastSpawnZ = SPAWN_Z_POSITION;
+                }
+            }
+
+            // Other Spawns
             if (Math.random() < 0.002) {
                 const lane = random(0, LANE_COUNT - 1);
                 if (isLaneClear(lane)) {
-                    const mesh = createAmbulance();
-                    mesh.position.set(laneToX(lane), 0, SPAWN_Z_POSITION);
-                    ambulances.push({ mesh, lane });
-                    scene.add(mesh);
-                    lastSpawnZ = SPAWN_Z_POSITION;
+                    const mesh = createAmbulance(); mesh.position.set(laneToX(lane), 0, SPAWN_Z_POSITION);
+                    ambulances.push({ mesh, lane }); scene.add(mesh); lastSpawnZ = SPAWN_Z_POSITION;
                 }
             }
-
-            // Lights
             if (Math.random() < 0.005) {
                 const lane = random(0, LANE_COUNT - 1);
                 if (isLaneClear(lane)) {
                     const type = Math.random() > 0.4 ? 'GREEN' : 'RED';
-                    const mesh = createTrafficLight(type);
-                    mesh.position.set(laneToX(lane), 0, SPAWN_Z_POSITION);
-                    trafficLights.push({ mesh, lane, type });
-                    scene.add(mesh);
-                    lastSpawnZ = SPAWN_Z_POSITION;
+                    const mesh = createTrafficLight(type); mesh.position.set(laneToX(lane), 0, SPAWN_Z_POSITION);
+                    trafficLights.push({ mesh, lane, type }); scene.add(mesh); lastSpawnZ = SPAWN_Z_POSITION;
                 }
             }
-
-            // Coins
             if (Math.random() < 0.01) {
                 const lane = random(0, LANE_COUNT - 1);
                 if (isLaneClear(lane)) {
                     for(let k=0; k<5; k++) {
-                        const mesh = createCoin();
-                        mesh.position.set(laneToX(lane), 1, SPAWN_Z_POSITION - (k * 4));
-                        coins.push({ mesh, lane });
-                        scene.add(mesh);
+                        const mesh = createCoin(); mesh.position.set(laneToX(lane), 1, SPAWN_Z_POSITION - (k * 4));
+                        coins.push({ mesh, lane }); scene.add(mesh);
                     }
                 }
             }
         }
 
         function isLaneClear(lane) {
-            const allObjs = [...enemies, ...ambulances, ...trafficLights];
-            return allObjs.every(o => o.lane !== lane || o.mesh.position.z > lastSpawnZ + 30);
+            const all = [...enemies, ...ambulances, ...police, ...trafficLights, ...powerups];
+            return all.every(o => o.lane !== lane || o.mesh.position.z > lastSpawnZ + 30);
         }
 
         function endGame() {
             if (gameOver) return;
             gameOver = true;
             cancelAnimationFrame(animationFrameId);
-            
-            // Fade out engine sound
-            if (engineMasterGain) {
-                engineMasterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
-            }
-            
+            if (engineMasterGain) engineMasterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
             spawnExplosion(playerCar.position, 0xff5500, 30);
             scene.remove(playerCar);
-            updateParticles(); // One last update for explosion
-
-            finalScoreEl.textContent = score;
-            finalComboEl.textContent = maxCombo;
+            if(playerShieldMesh) scene.remove(playerShieldMesh);
+            updateParticles();
+            finalScoreEl.textContent = score; finalComboEl.textContent = maxCombo;
             modalEl.classList.remove('hidden');
         }
 
         function animate() {
             animationFrameId = requestAnimationFrame(animate);
-
             if (!gameOver) {
                 let speedMult = isAccelerating ? 2.0 : (isBraking ? 0.5 : 1.0);
                 let currentSpeed = gameSpeed * speedMult;
-                
-                // Continuous Engine Update
                 updateEngine(currentSpeed, isAccelerating);
-
                 updateWeather(currentSpeed);
                 updatePlayer();
                 updateRoadLines(currentSpeed);
                 updateGameObjects(currentSpeed);
                 updateParticles();
                 spawnObjects();
-
-                // UI Updates
+                
                 scoreEl.textContent = score;
                 speedDisplayEl.textContent = (currentSpeed * 3).toFixed(1) + 'x';
-                gameSpeed = Math.min(gameSpeed + 0.0001, 1.0); // Slow accel
+                gameSpeed = Math.min(gameSpeed + 0.0001, 1.0);
                 
-                // Dynamic FOV
                 const targetFOV = isAccelerating ? 85 : 75;
                 camera.fov += (targetFOV - camera.fov) * 0.05;
                 camera.updateProjectionMatrix();
-
                 renderer.render(scene, camera);
-            } else {
-                 renderer.render(scene, camera);
-            }
+            } else renderer.render(scene, camera);
         }
 
         // --- Controls ---
-        function movePlayer(dir) {
-            playerLane = Math.max(0, Math.min(LANE_COUNT - 1, playerLane + dir));
-            playerTargetX = laneToX(playerLane);
-        }
-
+        function movePlayer(dir) { playerLane = Math.max(0, Math.min(LANE_COUNT - 1, playerLane + dir)); playerTargetX = laneToX(playerLane); }
         function updateCanvasSize() {
-             if (window.innerWidth < 768 && window.innerHeight > window.innerWidth) {
-                CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.95);
-                CANVAS_HEIGHT = Math.min(500, window.innerHeight * 0.5);
-            } else {
-                CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.9);
-                CANVAS_HEIGHT = Math.min(600, window.innerHeight * 0.6);
-            }
+             if (window.innerWidth < 768 && window.innerHeight > window.innerWidth) { CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.95); CANVAS_HEIGHT = Math.min(500, window.innerHeight * 0.5); } 
+             else { CANVAS_WIDTH = Math.min(600, window.innerWidth * 0.9); CANVAS_HEIGHT = Math.min(600, window.innerHeight * 0.6); }
             if(canvas) { canvas.width = CANVAS_WIDTH; canvas.height = CANVAS_HEIGHT; }
             if(camera) { camera.aspect = CANVAS_WIDTH / CANVAS_HEIGHT; camera.updateProjectionMatrix(); }
             if(renderer) { renderer.setSize(CANVAS_WIDTH, CANVAS_HEIGHT); }
@@ -1169,16 +1144,9 @@
 
         function addEventListeners() {
             window.addEventListener('resize', updateCanvasSize);
-            
-            // Helper to start audio on first interaction
-            const resumeAudio = () => {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                if (!engineOsc1) startEngine();
-            };
-
+            const resumeAudio = () => { if (audioCtx.state === 'suspended') audioCtx.resume(); if (!engineOsc1) startEngine(); };
             window.addEventListener('keydown', e => {
-                resumeAudio();
-                if(gameOver) return;
+                resumeAudio(); if(gameOver) return;
                 if(e.key === 'ArrowLeft' || e.key === 'a') movePlayer(-1);
                 if(e.key === 'ArrowRight' || e.key === 'd') movePlayer(1);
                 if(e.key === 'ArrowUp' || e.key === 'w') isAccelerating = true;
@@ -1188,56 +1156,21 @@
                 if(e.key === 'ArrowUp' || e.key === 'w') isAccelerating = false;
                 if(e.key === 'ArrowDown' || e.key === 's') isBraking = false;
             });
-            
-            restartButton.addEventListener('click', () => {
-                resumeAudio();
-                resetGame();
-            });
-
-            // --- Unified Touch/Swipe Controls ---
-            // Zone 1: Left 50% width -> Hold to Brake
-            // Zone 2: Right 50% width -> Hold to Gas
-            // Swipe: Overrides taps for steering
-            
+            restartButton.addEventListener('click', () => { resumeAudio(); resetGame(); });
             window.addEventListener('touchstart', e => {
-                resumeAudio();
-                if(e.target.closest('button')) return; // Ignore buttons
-                
+                resumeAudio(); if(e.target.closest('button')) return;
                 touchStartX = e.touches[0].clientX;
-                const width = window.innerWidth;
-                const x = touchStartX;
-                
-                // Logic: If touch starts on right half -> Gas. Left half -> Brake.
-                // But we wait to see if it's a swipe first? 
-                // Instant response feels better for gas/brake.
-                if (x > width / 2) {
-                    isAccelerating = true;
-                } else {
-                    isBraking = true;
-                }
+                if (touchStartX > window.innerWidth / 2) isAccelerating = true; else isBraking = true;
             }, {passive: false});
-
             window.addEventListener('touchend', e => {
                 if (gameOver) return;
-                
-                // Handle Swipe on release
                 touchEndX = e.changedTouches[0].clientX;
                 const diff = touchEndX - touchStartX;
-                if (Math.abs(diff) > SWIPE_THRESHOLD) {
-                    movePlayer(diff > 0 ? 1 : -1);
-                }
-                
-                // Reset pedals
-                isAccelerating = false;
-                isBraking = false;
-                touchStartX = 0;
+                if (Math.abs(diff) > SWIPE_THRESHOLD) movePlayer(diff > 0 ? 1 : -1);
+                isAccelerating = false; isBraking = false;
             });
-            
-            // Prevent context menu on hold
             window.addEventListener('contextmenu', e => e.preventDefault());
         }
-        
-        // Start
         init();
     </script>
 </body>
