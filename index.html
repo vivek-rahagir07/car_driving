@@ -1,44 +1,1176 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BMU ONE v3</title><style>
-:root{--n:#0b2340;--b:#2f6fed;--bg:#f5f7fb;--c:#fff;--m:#718096;--l:#e5eaf1;--g:#15966b;--a:#b7791f;--r:#d94c4c}*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui;background:var(--bg);color:#172033}.app{display:flex;min-height:100vh}.side{width:245px;position:fixed;height:100vh;background:var(--n);color:#fff;padding:20px 14px}.brand{font-weight:900;font-size:22px;padding:0 10px 20px}.brand i{color:#75b7ff;font-style:normal}.prof{background:#173a5d;padding:12px;border-radius:13px;margin-bottom:15px;font-size:13px}.nav button{width:100%;border:0;background:none;color:#c9d7e6;padding:11px 12px;text-align:left;border-radius:10px;cursor:pointer;margin:2px 0}.nav button:hover,.nav button.on{background:#1b4165;color:#fff}.label{font-size:10px;color:#91a7bd;letter-spacing:1px;text-transform:uppercase;padding:13px 12px 5px}.main{margin-left:245px;width:calc(100% - 245px);padding:22px 28px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.top h1{margin:0;font-size:26px}.muted{color:var(--m);font-size:12px}.page{display:none}.page.on{display:block}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.grid2{display:grid;grid-template-columns:1.3fr .7fr;gap:15px;margin-top:15px}.card{background:#fff;border:1px solid var(--l);border-radius:16px;padding:17px;box-shadow:0 3px 14px #102a4309}.stat .v{font-size:25px;font-weight:850;margin:5px 0}.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.head h2{font-size:16px;margin:0}.row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--l);align-items:center}.row:last-child{border-bottom:0}.pill{font-size:10px;padding:5px 8px;border-radius:20px;background:#eaf1ff;color:#2455ae;white-space:nowrap}.green{color:var(--g)}.amber{color:var(--a)}.red{color:var(--r)}.pill.red{background:#fff0f0;color:#b42323}.pill.green{background:#eaf8f2;color:#11734f}.pill.amber{background:#fff6e4;color:#936316}.hero{background:linear-gradient(120deg,#0e3154,#205ea6);color:white;border-radius:18px;padding:20px;margin-bottom:14px}.hero h2{margin:0 0 5px}.hero p{margin:0;color:#d8e9fb;font-size:12px}.btn{border:0;background:var(--b);color:#fff;padding:9px 12px;border-radius:9px;cursor:pointer}.light{background:#edf2f9;color:#24405f}.quick{display:grid;grid-template-columns:1fr 1fr;gap:9px}.quick button{padding:12px;border:1px solid var(--l);background:#fff;border-radius:10px;text-align:left;cursor:pointer}.toolbar{display:flex;gap:9px;margin-bottom:12px}.search{flex:1;border:1px solid var(--l);padding:11px;border-radius:10px}.select{border:1px solid var(--l);border-radius:10px;padding:10px;background:white}.table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{padding:11px;border-bottom:1px solid var(--l);text-align:left}.table th{color:var(--m)}.bookgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.book{border:1px solid var(--l);border-radius:12px;padding:13px}.book p{font-size:11px;color:var(--m);line-height:1.5}.chat{height:calc(100vh - 150px);min-height:500px;display:flex;flex-direction:column}.msgs{flex:1;overflow:auto;padding:5px}.bubble{max-width:78%;padding:11px 13px;border-radius:14px;margin:8px 0;font-size:13px;line-height:1.5}.bot{background:#edf4ff}.user{background:var(--b);color:white;margin-left:auto}.chatbar{display:flex;gap:8px;border-top:1px solid var(--l);padding-top:10px}.chatbar input{flex:1;border:1px solid var(--l);padding:11px;border-radius:10px}.notice{background:#fff8e8;border-left:4px solid #dda52f;padding:11px;border-radius:8px;font-size:12px}.toast{display:none;position:fixed;right:20px;bottom:20px;background:#132f4c;color:white;padding:12px 15px;border-radius:9px;z-index:20}@media(max-width:900px){.side{width:72px}.brand{font-size:0}.brand i{font-size:18px}.prof{font-size:0}.nav button{font-size:0;text-align:center}.nav button::first-letter{font-size:18px}.label{display:none}.main{margin-left:72px;width:calc(100% - 72px)}.grid4{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}@media(max-width:600px){.main{padding:14px}.grid4,.bookgrid{grid-template-columns:1fr}.top h1{font-size:21px}}
-</style></head><body><div class="app"><aside class="side"><div class="brand">BMU <i>ONE</i></div><div class="prof"><b>Aarav Mehta</b><br><span>Student • B.Tech Year 1</span></div><nav class="nav"><div class="label">Overview</div><button data-p="dashboard" class="on">🏠 Dashboard</button><button data-p="calendar">📅 Calendar</button><div class="label">Student Life</div><button data-p="academics">📚 Academics</button><button data-p="tasks">✅ Tasks</button><button data-p="exams">📝 Exams</button><button data-p="hostel">🛏️ Hostel & Mess</button><button data-p="shuttle">🚌 Shuttle</button><button data-p="laundry">🧺 Laundry</button><div class="label">Resources</div><button data-p="study">📖 Study Hub</button><button data-p="ai">🤖 BMU AI</button></nav></aside><main class="main"><header class="top"><div><h1 id="title">Dashboard</h1><span class="muted" id="sub">Everything important for your university day.</span></div><button class="btn light" onclick="toast('Notifications checked.')">🔔</button></header>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniSphere — Unified Student Super App</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
 
-<section id="dashboard" class="page on"><div class="hero"><h2>Good evening, Aarav 👋</h2><p>Your day, academics and campus services in one place.</p></div><div class="grid4"><div class="card stat"><span class="muted">Next class</span><div class="v">DBMS</div><span class="muted">10:00 AM • B-204</span></div><div class="card stat"><span class="muted">Due this week</span><div class="v">3</div><span class="red">1 due tomorrow</span></div><div class="card stat"><span class="muted">Attendance</span><div class="v">86%</div><span class="green">Healthy</span></div><div class="card stat"><span class="muted">Next exam</span><div class="v">7 days</div><span class="muted">DBMS Internal</span></div></div><div class="grid2"><div class="card"><div class="head"><h2>Today's schedule</h2><button class="btn light" onclick="go('calendar')">Full calendar</button></div><div class="row"><div><b>09:00 — Mathematics II</b><br><span class="muted">B-201 • Prof. Sharma</span></div><span class="pill">Class</span></div><div class="row"><div><b>10:00 — DBMS</b><br><span class="muted">B-204 • Prof. Mehta</span></div><span class="pill">Class</span></div><div class="row"><div><b>13:00 — Lunch</b><br><span class="muted">Central Mess</span></div><span class="pill green">Mess</span></div><div class="row"><div><b>23:59 — Python mini-project</b><br><span class="muted">LMS submission</span></div><span class="pill red">Due</span></div></div><div class="card"><div class="head"><h2>Quick access</h2></div><div class="quick"><button onclick="go('shuttle')">🚌 <b>Shuttle</b><br><span class="muted">Routes & status</span></button><button onclick="go('laundry')">🧺 <b>Laundry</b><br><span class="muted">Track service</span></button><button onclick="go('study')">📖 <b>Study Hub</b><br><span class="muted">Books & topics</span></button><button onclick="go('ai')">🤖 <b>BMU AI</b><br><span class="muted">Ask a question</span></button></div><div class="notice" style="margin-top:12px">Prototype note: service schedules below use publicly verified BMU facility information where available; live operational feeds require university/vendor access.</div></div></div></section>
+  <!-- ===================================================
+       1. SPLASH / OPENING WINDOW
+  =================================================== -->
+  <div id="splash-screen">
+    <div class="splash-logo">UniSphere<span>.</span></div>
+    <div class="splash-subtitle">A Super App for Academics & Campus Life</div>
+    
+    <div class="splash-loading-bar">
+      <div class="splash-loading-progress"></div>
+    </div>
 
-<section id="calendar" class="page"><div class="card"><div class="head"><h2>My Calendar — August 2026</h2><button class="btn light" onclick="toast('Calendar refreshed.')">Refresh</button></div><table class="table"><tr><th>Date</th><th>Type</th><th>Item</th><th>Time</th><th>Status</th></tr><tr><td>14 Aug</td><td>Assignment</td><td>Python mini-project</td><td>23:59</td><td><span class="pill red">Due tomorrow</span></td></tr><tr><td>16 Aug</td><td>Assignment</td><td>DBMS assignment</td><td>23:59</td><td><span class="pill amber">Upcoming</span></td></tr><tr><td>20 Aug</td><td>Exam</td><td>DBMS Internal Assessment</td><td>10:00</td><td><span class="pill red">7 days</span></td></tr></table></div></section>
+    <div class="profile-selector-container">
+      <div class="profile-card" onclick="selectProfile('Aarav Mehta', '8.45', 'B.Tech CSE - Yr 2')">
+        <div class="profile-avatar">AM</div>
+        <div class="profile-name">Aarav Mehta</div>
+        <div class="profile-role">B.Tech CSE • Year 2</div>
+      </div>
+      <div class="profile-card" onclick="selectProfile('Priya Sharma', '9.10', 'B.Tech ECE - Yr 3')">
+        <div class="profile-avatar" style="background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%)">PS</div>
+        <div class="profile-name">Priya Sharma</div>
+        <div class="profile-role">B.Tech ECE • Year 3</div>
+      </div>
+      <div class="profile-card" onclick="selectProfile('Guest Student', '7.50', 'General Student')">
+        <div class="profile-avatar" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)">GS</div>
+        <div class="profile-name">Guest Entry</div>
+        <div class="profile-role">University Guest Access</div>
+      </div>
+    </div>
+  </div>
 
-<section id="academics" class="page"><div class="grid4"><div class="card stat"><span class="muted">Semester</span><div class="v">1</div></div><div class="card stat"><span class="muted">Credits</span><div class="v">20</div></div><div class="card stat"><span class="muted">CGPA</span><div class="v">8.2</div></div><div class="card stat"><span class="muted">Attendance</span><div class="v">86%</div></div></div><div class="card" style="margin-top:15px"><div class="head"><h2>Subjects</h2></div><table class="table"><tr><th>Subject</th><th>Faculty</th><th>Room</th><th>Attendance</th></tr><tr><td>Mathematics II</td><td>Prof. Sharma</td><td>B-201</td><td class="green">86%</td></tr><tr><td>DBMS</td><td>Prof. Mehta</td><td>B-204</td><td class="green">91%</td></tr><tr><td>Python Programming</td><td>Prof. Rao</td><td>C-103</td><td class="amber">78%</td></tr></table></div></section>
+  <!-- ===================================================
+       2. APP LAYOUT CONTAINER
+  =================================================== -->
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">UniSphere<span>.</span></div>
+      
+      <div class="student-badge">
+        <div class="badge-avatar">AM</div>
+        <div class="badge-info">
+          <h4>Aarav Mehta</h4>
+          <p>B.Tech CSE - Yr 2</p>
+        </div>
+      </div>
 
-<section id="tasks" class="page"><div class="card"><div class="head"><h2>Tasks & Projects</h2><button class="btn" onclick="addTask()">+ Add task</button></div><div id="tasksList"><div class="row"><label><input type="checkbox" onchange="done(this)"> <b>Python mini-project</b><br><span class="muted">Due 14 Aug • LMS</span></label><span class="pill red">High</span></div><div class="row"><label><input type="checkbox" onchange="done(this)"> <b>DBMS assignment</b><br><span class="muted">Due 16 Aug</span></label><span class="pill amber">Medium</span></div></div></div></section>
+      <nav class="nav-section">
+        <div class="nav-label">Overview</div>
+        <ul class="nav-links">
+          <li class="nav-item">
+            <button class="nav-link active" data-tab="dashboard" onclick="openTab('dashboard')">🏠 Dashboard</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-tab="calendar" onclick="openTab('calendar')">📅 Calendar & Grid</button>
+          </li>
+        </ul>
+      </nav>
 
-<section id="exams" class="page"><div class="grid4"><div class="card stat"><span class="muted">Next exam</span><div class="v">DBMS</div><span>20 Aug • 10:00</span></div><div class="card stat"><span class="muted">Days left</span><div class="v">7</div></div><div class="card stat"><span class="muted">Coverage</span><div class="v">64%</div></div><div class="card stat"><span class="muted">Priority</span><div class="v red">High</div></div></div><div class="card" style="margin-top:15px"><div class="head"><h2>Recommended study order</h2><button class="btn light" onclick="go('study')">Study Hub</button></div><div class="row"><b>1. Normalization</b><span class="pill red">Priority</span></div><div class="row"><b>2. SQL joins</b><span class="pill amber">Priority</span></div><div class="row"><b>3. Transactions</b><span class="pill">Next</span></div></div></section>
+      <nav class="nav-section">
+        <div class="nav-label">Academics</div>
+        <ul class="nav-links">
+          <li class="nav-item">
+            <button class="nav-link" data-tab="academics" onclick="openTab('academics')">📚 Timetable & Logs</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-tab="tasks" onclick="openTab('tasks')">✅ Assignments & Exams</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-tab="grades" onclick="openTab('grades')">🧮 Grade Calculator</button>
+          </li>
+        </ul>
+      </nav>
 
-<section id="hostel" class="page"><div class="grid4"><div class="card stat"><span class="muted">Hostel</span><div class="v">H-3</div><span class="muted">Demo allocation</span></div><div class="card stat"><span class="muted">Mess</span><div class="v">Active</div><span class="muted">2 messes on campus</span></div><div class="card stat"><span class="muted">Maintenance</span><div class="v">1</div><span class="muted">Open request</span></div><div class="card stat"><span class="muted">Laundry</span><div class="v">Available</div><span class="muted">Campus facility</span></div></div><div class="grid2" style="margin-top:15px"><div class="card"><div class="head"><h2>Mess</h2><span class="pill green">Official facility info</span></div><p class="muted">BMU's official hostel page says the residential community is served by two messes within the hostel premises. The university says meals include breakfast, lunch, snacks and dinner, with North and South Indian options.</p></div><div class="card"><div class="head"><h2>Residence</h2></div><p class="muted">BMU states that its campus accommodation is designed to house about 2,000 students. Residence facilities include hostel/apartment accommodation and common areas.</p></div></div></section>
+      <nav class="nav-section">
+        <div class="nav-label">Campus Services</div>
+        <ul class="nav-links">
+          <li class="nav-item">
+            <button class="nav-link" data-tab="laundry" onclick="openTab('laundry')">🧺 Laundry Hub</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-tab="printing" onclick="openTab('printing')">🖨️ Copy Space & Printing</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-tab="hostel" onclick="openTab('hostel')">🛏️ Hostel & Maintenance</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-tab="clubs" onclick="openTab('clubs')">🏅 Clubs & Facility</button>
+          </li>
+        </ul>
+      </nav>
 
-<section id="shuttle" class="page"><div class="hero"><h2>🚌 BMU Shuttle</h2><p>Transport information is separated from the rest of the app so students can check it quickly.</p></div><div class="card"><div class="head"><h2>Live shuttle data</h2><span class="pill amber">Not publicly available</span></div><div class="notice">I could verify BMU's public campus information, but I could not find an official public page exposing live student shuttle routes, vehicle positions or current timings. This prototype therefore does <b>not invent shuttle timings</b>.</div><div class="row"><div><b>Production version</b><p class="muted">Connect to BMU's transport/vendor feed or authenticated student portal.</p></div><button class="btn light" onclick="toast('Transport feed integration placeholder.')">Connect feed</button></div></div><div class="card" style="margin-top:15px"><h2>Suggested student view</h2><div class="row"><b>Route / Stop</b><span class="muted">Live ETA</span></div><div class="row"><span>Campus → Gurugram / designated stop</span><span class="pill">Awaiting official feed</span></div></div></section>
+      <nav class="nav-section">
+        <div class="nav-label">Resources</div>
+        <ul class="nav-links">
+          <li class="nav-item">
+            <button class="nav-link" data-tab="study" onclick="openTab('study')">📖 AI Study Tool</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-tab="help" onclick="openTab('help')">❓ Help & Support</button>
+          </li>
+        </ul>
+      </nav>
 
-<section id="laundry" class="page"><div class="hero"><h2>🧺 Laundry</h2><p>Track your laundry without searching through messages.</p></div><div class="card"><div class="head"><h2>BMU facility information</h2><span class="pill green">Verified</span></div><p class="muted">BMU's published infrastructure information states that the campus has a laundry facility, and its 2024 self-study report says laundry facilities are available for campus residents.</p><div class="row"><div><b>Service status</b><p class="muted">Facility exists; live pickup slots, prices, vendor and order tracking were not found on BMU's public pages.</p></div><span class="pill amber">Live feed needed</span></div><div class="row"><div><b>Production feature</b><p class="muted">Students choose pickup → bag count/weight → service type → receive order ID and status.</p></div><button class="btn" onclick="toast('Laundry booking demo opened.')">Book demo pickup</button></div></div></section>
+      <div class="sidebar-footer">
+        <button class="btn-secondary btn-sm" style="width: 100%" onclick="document.getElementById('splash-screen').classList.remove('fade-out')">🔄 Switch Profile</button>
+      </div>
+    </aside>
 
-<section id="study" class="page"><div class="hero"><h2>📖 Study Hub</h2><p>Search books and decide what to study next.</p></div><div class="toolbar"><input id="q" class="search" placeholder="Search books or topics..." oninput="filterBooks()"><select id="sf" class="select" onchange="filterBooks()"><option value="">All</option><option>DBMS</option><option>Python</option><option>Math</option></select></div><div class="bookgrid" id="books"><div class="book" data-s="DBMS"><b>Database System Concepts</b><p>DBMS • normalization, SQL, transactions</p><button class="btn light" onclick="toast('Production link should point to BMU library/LMS.')">Open resource</button></div><div class="book" data-s="Python"><b>Python Crash Course</b><p>Python • fundamentals and projects</p><button class="btn light" onclick="toast('Production link should point to BMU library/LMS.')">Open resource</button></div><div class="book" data-s="Math"><b>Thomas' Calculus</b><p>Math • integration and series</p><button class="btn light" onclick="toast('Production link should point to BMU library/LMS.')">Open resource</button></div></div></section>
+    <!-- Main Workspace Area -->
+    <main class="main-workspace">
+      
+      <!-- Open Tabs Bar (Docking Area) -->
+      <div class="tab-bar">
+        <button class="btn-workspace-toggle" onclick="toggleMobileSidebar()" style="margin-right: 0.5rem; display: none;">☰</button>
+        <div style="display: flex; gap: 0.5rem; flex: 1;" id="tab-bar-container">
+          <!-- Dynamic Tabs will insert here -->
+        </div>
+        <button id="btn-max-toggle" class="btn-workspace-toggle" onclick="toggleWorkspaceMaximize()" title="Maximize Workspace">🗖</button>
+      </div>
 
-<section id="ai" class="page"><div class="card chat"><div class="head"><div><h2>🤖 BMU AI</h2><span class="muted">University assistant • prototype</span></div><span class="pill green">Working</span></div><div class="msgs" id="msgs"><div class="bubble bot">Hi! Ask me about <b>classes, deadlines, exams, hostel, mess, shuttle or laundry</b>.<br><br>Example: “Is laundry available at BMU?”</div></div><div class="chatbar"><input id="chat" placeholder="Ask a BMU question..." onkeydown="if(event.key==='Enter')ask()"><button class="btn" onclick="ask()">Ask</button></div></div></section>
-</main></div><div id="toast" class="toast"></div>
-<script>
-const meta={dashboard:['Dashboard','Everything important for your university day.'],calendar:['My Calendar','Classes, exams, deadlines and events.'],academics:['Academics','Subjects, faculty, rooms and attendance.'],tasks:['Tasks & Projects','Assignments and project tracking.'],exams:['Exams','Assessments and study priorities.'],hostel:['Hostel & Mess','Residence, dining and services.'],shuttle:['Shuttle','Transport routes and live-status integration.'],laundry:['Laundry','Campus laundry information and booking.'],study:['Study Hub','Books, topics and study resources.'],ai:['BMU AI','Ask questions about university life.']};
-function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));document.getElementById(id).classList.add('on');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.p===id));document.getElementById('title').textContent=meta[id][0];document.getElementById('sub').textContent=meta[id][1];scrollTo(0,0)}
-document.querySelectorAll('.nav button').forEach(x=>x.onclick=()=>go(x.dataset.p));
-function toast(t){let x=document.getElementById('toast');x.textContent=t;x.style.display='block';clearTimeout(window.t);window.t=setTimeout(()=>x.style.display='none',2200)}
-function done(c){c.parentElement.style.textDecoration=c.checked?'line-through':'none';c.parentElement.style.opacity=c.checked?.45:1}
-function addTask(){let n=prompt('Task name?');if(!n)return;let d=document.createElement('div');d.className='row';d.innerHTML='<label><input type="checkbox" onchange="done(this)"> <b>'+n.replace(/[<>&"]/g,'')+'</b><br><span class="muted">Added now</span></label><span class="pill">New</span>';document.getElementById('tasksList').appendChild(d);toast('Task added.')}
-function filterBooks(){let q=document.getElementById('q').value.toLowerCase(),s=document.getElementById('sf').value;document.querySelectorAll('.book').forEach(b=>b.style.display=(!q||b.innerText.toLowerCase().includes(q))&&(!s||b.dataset.s===s)?'block':'none')}
-function msg(t,c){let d=document.createElement('div');d.className='bubble '+c;d.innerHTML=t;let m=document.getElementById('msgs');m.appendChild(d);m.scrollTop=m.scrollHeight}
-function ask(){let i=document.getElementById('chat'),q=i.value.trim();if(!q)return;msg(q.replace(/[<>&"]/g,''),'user');i.value='';let s=q.toLowerCase(),a;
-if(s.includes('laundry'))a='<b>Yes.</b> BMU’s official infrastructure information says the campus has a laundry facility, and its 2024 self-study report says laundry facilities are available for campus residents. I could not verify public live prices, pickup slots or vendor tracking, so I won’t invent them.';
-else if(s.includes('shuttle')||s.includes('bus'))a='<b>Shuttle:</b> I could not find a public official BMU page exposing live student shuttle routes/timings. The production app should connect to an authenticated BMU transport/vendor feed. This prototype intentionally shows “live data unavailable” instead of making up timings.';
-else if(s.includes('mess')||s.includes('food'))a='<b>Mess:</b> BMU’s official hostel page says the residential community is served by two messes within the hostel premises, with breakfast, lunch, snacks and dinner and North/South Indian options.';
-else if(s.includes('hostel'))a='<b>Hostel:</b> BMU says its campus accommodation is designed to house about 2,000 students. Residence information and rules should be retrieved from the university’s authenticated student systems in production.';
-else if(s.includes('exam')||s.includes('study'))a='<b>Study:</b> For the demo, your next DBMS assessment is shown as 20 Aug. A real BMU AI should retrieve your authenticated course syllabus, exam timetable and library resources before generating a study plan.';
-else if(s.includes('class')||s.includes('deadline'))a='<b>Your demo data:</b> DBMS is next at 10:00 AM, and the Python mini-project is due tomorrow. For production, these should come directly from the student LMS/ERP.';
-else a='I can answer questions about <b>academics, exams, hostel, mess, shuttle, laundry and study resources</b>. For factual university answers, production should use a verified BMU knowledge base.';
-setTimeout(()=>msg(a,'bot'),250)}
-</script></body></html>
+      <!-- Content Area with Active Page Modules -->
+      <div class="workspace-content">
+        
+        <!-- Headers -->
+        <header class="panel-header">
+          <div class="panel-title">
+            <h2 id="workspace-title">Student Dashboard</h2>
+            <p id="workspace-subtitle">Welcome to your central student command center.</p>
+          </div>
+          <div class="header-controls">
+            <button class="btn-secondary btn-sm" onclick="showToast('Notification center contains no new items.')">🔔 Alerts</button>
+          </div>
+        </header>
+
+        <!-- ==========================================
+             PAGE PANEL: DASHBOARD
+        =========================================== -->
+        <section id="dashboard" class="page-panel active">
+          <div class="hero-card">
+            <h1 id="dashboard-greeting">Good evening, Aarav 👋</h1>
+            <p>Ready to manage classes, logistics and exams? Check your cards below.</p>
+          </div>
+
+          <div class="card-grid">
+            <div class="glass-card stat-card">
+              <span class="text-muted" style="font-size:0.75rem;">Next Lecture</span>
+              <div class="stat-value" id="dash-class-val">DBMS (B-204)</div>
+              <div class="stat-sub" id="dash-class-sub">In 15 minutes • Prof. Mehta</div>
+            </div>
+            
+            <div class="glass-card stat-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="text-muted" style="font-size:0.75rem;">Attendance Avg</span>
+                <span id="dash-attendance-badge" class="badge badge-green">Healthy</span>
+              </div>
+              <div class="stat-value" id="dash-attendance-val">84%</div>
+              <div class="stat-sub">Across 3 main modules</div>
+            </div>
+
+            <div class="glass-card stat-card">
+              <span class="text-muted" style="font-size:0.75rem;">Pending Deliverables</span>
+              <div class="stat-value" id="dash-tasks-val">2</div>
+              <div class="stat-sub" style="color:var(--accent-red)">Next submission: 25 Aug</div>
+            </div>
+
+            <div class="glass-card stat-card">
+              <span class="text-muted" style="font-size:0.75rem;">Current Grade Index</span>
+              <div class="stat-value" id="dash-cgpa-val">8.45</div>
+              <div class="stat-sub">Target: 8.5 CGPA</div>
+            </div>
+          </div>
+
+          <div class="card-grid" style="grid-template-columns: 1.3fr 0.7fr;">
+            <!-- Today's Schedule Card -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Today's Schedule</h3>
+                <span class="badge badge-purple">Mon / Thu Cycle</span>
+              </div>
+              <div class="list-rows">
+                <div class="list-row">
+                  <div class="list-row-info">
+                    <h5>09:00 AM — Mathematics II</h5>
+                    <p>Prof. Sharma • Room B-201</p>
+                  </div>
+                  <span class="badge badge-blue">Lecture</span>
+                </div>
+                <div class="list-row">
+                  <div class="list-row-info">
+                    <h5>10:00 AM — DBMS</h5>
+                    <p>Prof. Mehta • Room B-204</p>
+                  </div>
+                  <span class="badge badge-blue">Lecture</span>
+                </div>
+                <div class="list-row">
+                  <div class="list-row-info">
+                    <h5>01:00 PM — Luncheon</h5>
+                    <p>Hostel Mess 1 (North Indian Block)</p>
+                  </div>
+                  <span class="badge badge-green">Dining</span>
+                </div>
+                <div class="list-row">
+                  <div class="list-row-info">
+                    <h5>05:00 PM — Cricket Practice Session</h5>
+                    <p>Sports Complex Ground</p>
+                  </div>
+                  <span class="badge badge-purple">Club Activity</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Service Access -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Quick Services</h3>
+              </div>
+              <p class="text-muted" style="font-size:0.75rem;margin-bottom:0.75rem;">Access student facilities directly in your super app:</p>
+              <div class="quick-actions-grid">
+                <div class="quick-action-btn" onclick="openTab('laundry')">
+                  <span>🧺</span>
+                  <p>Laundry Hub</p>
+                </div>
+                <div class="quick-action-btn" onclick="openTab('printing')">
+                  <span>🖨️</span>
+                  <p>Printers</p>
+                </div>
+                <div class="quick-action-btn" onclick="openTab('hostel')">
+                  <span>🛏️</span>
+                  <p>Hostel</p>
+                </div>
+                <div class="quick-action-btn" onclick="openTab('clubs')">
+                  <span>🏅</span>
+                  <p>Clubs</p>
+                </div>
+                <div class="quick-action-btn" onclick="openTab('study')">
+                  <span>📖</span>
+                  <p>Study Tool</p>
+                </div>
+                <div class="quick-action-btn" onclick="openTab('grades')">
+                  <span>🧮</span>
+                  <p>GPA Calc</p>
+                </div>
+              </div>
+              
+              <div class="glass-card" style="margin-top: 1rem; background:rgba(255, 158, 11, 0.04); border-color: rgba(245,158,11,0.2); padding: 0.75rem;">
+                <h5 style="color:var(--accent-orange); font-size:0.8rem; margin-bottom: 0.2rem;">🚌 Shuttle Service Alert</h5>
+                <p style="font-size:0.7rem; color:var(--text-muted); line-height: 1.3;">Shuttle schedules are updated on the main notice board. Contact student transport office for route updates.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: CALENDAR
+        =========================================== -->
+        <section id="calendar" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1.2fr 0.8fr;">
+            <!-- Calendar Grid View -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>August 2026 Grid</h3>
+                <button class="btn-primary btn-sm" onclick="openAddEventModal()">+ Log Event</button>
+              </div>
+              
+              <div class="calendar-view-toggle">
+                <button class="active">Month View</button>
+                <button onclick="showToast('Weekly calendar view requires student calendar authorization.')">Week View</button>
+              </div>
+
+              <div class="month-view-grid">
+                <!-- Days Head -->
+                <div class="month-day-head">Mon</div>
+                <div class="month-day-head">Tue</div>
+                <div class="month-day-head">Wed</div>
+                <div class="month-day-head">Thu</div>
+                <div class="month-day-head">Fri</div>
+                <div class="month-day-head">Sat</div>
+                <div class="month-day-head">Sun</div>
+                
+                <!-- Week 1 -->
+                <div class="month-day"><span class="month-day-num">27</span></div>
+                <div class="month-day"><span class="month-day-num">28</span></div>
+                <div class="month-day"><span class="month-day-num">29</span></div>
+                <div class="month-day"><span class="month-day-num">30</span></div>
+                <div class="month-day"><span class="month-day-num">31</span></div>
+                <div class="month-day current-month"><span class="month-day-num">1</span></div>
+                <div class="month-day current-month"><span class="month-day-num">2</span></div>
+                
+                <!-- Week 2 -->
+                <div class="month-day current-month"><span class="month-day-num">3</span></div>
+                <div class="month-day current-month"><span class="month-day-num">4</span></div>
+                <div class="month-day current-month"><span class="month-day-num">5</span></div>
+                <div class="month-day current-month"><span class="month-day-num">6</span></div>
+                <div class="month-day current-month"><span class="month-day-num">7</span></div>
+                <div class="month-day current-month">
+                  <span class="month-day-num">8</span>
+                  <div class="month-day-dots"><div class="dot dot-blue"></div></div>
+                </div>
+                <div class="month-day current-month"><span class="month-day-num">9</span></div>
+                
+                <!-- Week 3 -->
+                <div class="month-day current-month"><span class="month-day-num">10</span></div>
+                <div class="month-day current-month"><span class="month-day-num">11</span></div>
+                <div class="month-day current-month"><span class="month-day-num">12</span></div>
+                <div class="month-day current-month"><span class="month-day-num">13</span></div>
+                <div class="month-day current-month">
+                  <span class="month-day-num">14</span>
+                  <div class="month-day-dots"><div class="dot dot-red"></div></div>
+                </div>
+                <div class="month-day current-month"><span class="month-day-num">15</span></div>
+                <div class="month-day current-month"><span class="month-day-num">16</span></div>
+                
+                <!-- Week 4 -->
+                <div class="month-day current-month"><span class="month-day-num">17</span></div>
+                <div class="month-day current-month"><span class="month-day-num">18</span></div>
+                <div class="month-day current-month"><span class="month-day-num">19</span></div>
+                <div class="month-day current-month"><span class="month-day-num">20</span></div>
+                <div class="month-day current-month"><span class="month-day-num">21</span></div>
+                <div class="month-day current-month">
+                  <span class="month-day-num">22</span>
+                  <div class="month-day-dots"><div class="dot dot-blue"></div></div>
+                </div>
+                <div class="month-day current-month"><span class="month-day-num">23</span></div>
+
+                <!-- Week 5 -->
+                <div class="month-day current-month"><span class="month-day-num">24</span></div>
+                <div class="month-day current-month">
+                  <span class="month-day-num">25</span>
+                  <div class="month-day-dots"><div class="dot dot-red"></div></div>
+                </div>
+                <div class="month-day current-month"><span class="month-day-num">26</span></div>
+                <div class="month-day current-month">
+                  <span class="month-day-num">27</span>
+                  <div class="month-day-dots"><div class="dot dot-red"></div></div>
+                </div>
+                <div class="month-day current-month"><span class="month-day-num">28</span></div>
+                <div class="month-day current-month"><span class="month-day-num">29</span></div>
+                <div class="month-day current-month"><span class="month-day-num">30</span></div>
+              </div>
+            </div>
+
+            <!-- Milestone event lists -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Milestones & Holidays</h3>
+              </div>
+              <div class="list-rows" id="calendar-events-list">
+                <!-- Logged Events rendered dynamically by JS -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: ACADEMICS
+        =========================================== -->
+        <section id="academics" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+            <!-- Timetable grid -->
+            <div class="glass-card timetable-section">
+              <div class="card-title-bar">
+                <h3>Visual Class Timetable</h3>
+              </div>
+              
+              <div class="timetable-wrapper">
+                <div class="timetable-grid">
+                  <div class="timetable-header">Time</div>
+                  <div class="timetable-header">Mon</div>
+                  <div class="timetable-header">Tue</div>
+                  <div class="timetable-header">Wed</div>
+                  <div class="timetable-header">Thu</div>
+                  <div class="timetable-header">Fri</div>
+
+                  <!-- Row 09:00 -->
+                  <div class="timetable-time-col">09:00 AM</div>
+                  <div class="timetable-slot active-class">
+                    <h5>Maths II</h5>
+                    <p>B-201</p>
+                  </div>
+                  <div class="timetable-slot">
+                    <p class="text-muted">-</p>
+                  </div>
+                  <div class="timetable-slot active-class">
+                    <h5>Maths II</h5>
+                    <p>B-201</p>
+                  </div>
+                  <div class="timetable-slot">
+                    <p class="text-muted">-</p>
+                  </div>
+                  <div class="timetable-slot active-class">
+                    <h5>Lab Python</h5>
+                    <p>C-103</p>
+                  </div>
+
+                  <!-- Row 10:00 -->
+                  <div class="timetable-time-col">10:00 AM</div>
+                  <div class="timetable-slot active-class">
+                    <h5>DBMS</h5>
+                    <p>B-204</p>
+                  </div>
+                  <div class="timetable-slot active-class">
+                    <h5>Python Prog</h5>
+                    <p>B-204</p>
+                  </div>
+                  <div class="timetable-slot">
+                    <p class="text-muted">-</p>
+                  </div>
+                  <div class="timetable-slot active-class">
+                    <h5>DBMS</h5>
+                    <p>B-204</p>
+                  </div>
+                  <div class="timetable-slot active-class">
+                    <h5>Lab Python</h5>
+                    <p>C-103</p>
+                  </div>
+
+                  <!-- Row 11:30 -->
+                  <div class="timetable-time-col">11:30 AM</div>
+                  <div class="timetable-slot">
+                    <p class="text-muted">-</p>
+                  </div>
+                  <div class="timetable-slot active-class">
+                    <h5>Python Prog</h5>
+                    <p>B-204</p>
+                  </div>
+                  <div class="timetable-slot active-class">
+                    <h5>Maths II</h5>
+                    <p>B-201</p>
+                  </div>
+                  <div class="timetable-slot">
+                    <p class="text-muted">-</p>
+                  </div>
+                  <div class="timetable-slot">
+                    <p class="text-muted">-</p>
+                  </div>
+
+                  <!-- Row 02:00 -->
+                  <div class="timetable-time-col">02:00 PM</div>
+                  <div class="timetable-slot">
+                    <p class="text-muted">-</p>
+                  </div>
+                  <div class="timetable-slot active-class">
+                    <h5>DBMS Lab</h5>
+                    <p>C-102</p>
+                  </div>
+                  <div class="timetable-slot">
+                    <p class="text-muted">-</p>
+                  </div>
+                  <div class="timetable-slot active-class">
+                    <h5>DBMS Lab</h5>
+                    <p>C-102</p>
+                  </div>
+                  <div class="timetable-slot">
+                    <p class="text-muted">-</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Attendance Rings Card -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Attendance Logs & Threshold</h3>
+                <span class="badge badge-purple">Min 75% required</span>
+              </div>
+              
+              <div class="attendance-container">
+                <!-- Subject 1: Maths -->
+                <div class="attendance-ring-box">
+                  <div class="progress-ring">
+                    <svg width="90" height="90">
+                      <circle class="progress-ring-circle-bg" cx="45" cy="45" r="38"></circle>
+                      <circle id="circle-math" class="progress-ring-circle" cx="45" cy="45" r="38"></circle>
+                    </svg>
+                    <div id="text-math" class="progress-ring-text">85%</div>
+                  </div>
+                  <h4 style="font-size:0.85rem;margin-top:0.25rem;">Mathematics II</h4>
+                  <p id="att-math-logs" class="text-muted" style="font-size:0.7rem;">24/28 classes</p>
+                  <div style="display:flex;gap:0.35rem;margin-top:0.25rem;">
+                    <button class="btn-secondary btn-sm" onclick="adjustAttendance('math', true, 1)">+ Attended</button>
+                    <button class="btn-secondary btn-sm" onclick="adjustAttendance('math', false, 1)">+ Missed</button>
+                  </div>
+                </div>
+
+                <!-- Subject 2: DBMS -->
+                <div class="attendance-ring-box">
+                  <div class="progress-ring">
+                    <svg width="90" height="90">
+                      <circle class="progress-ring-circle-bg" cx="45" cy="45" r="38"></circle>
+                      <circle id="circle-dbms" class="progress-ring-circle" cx="45" cy="45" r="38"></circle>
+                    </svg>
+                    <div id="text-dbms" class="progress-ring-text">87%</div>
+                  </div>
+                  <h4 style="font-size:0.85rem;margin-top:0.25rem;">DBMS</h4>
+                  <p id="att-dbms-logs" class="text-muted" style="font-size:0.7rem;">21/24 classes</p>
+                  <div style="display:flex;gap:0.35rem;margin-top:0.25rem;">
+                    <button class="btn-secondary btn-sm" onclick="adjustAttendance('dbms', true, 1)">+ Attended</button>
+                    <button class="btn-secondary btn-sm" onclick="adjustAttendance('dbms', false, 1)">+ Missed</button>
+                  </div>
+                </div>
+
+                <!-- Subject 3: Python -->
+                <div class="attendance-ring-box">
+                  <div class="progress-ring">
+                    <svg width="90" height="90">
+                      <circle class="progress-ring-circle-bg" cx="45" cy="45" r="38"></circle>
+                      <circle id="circle-python" class="progress-ring-circle" cx="45" cy="45" r="38"></circle>
+                    </svg>
+                    <div id="text-python" class="progress-ring-text">72%</div>
+                  </div>
+                  <h4 style="font-size:0.85rem;margin-top:0.25rem;">Python Programming</h4>
+                  <p id="att-python-logs" class="text-muted" style="font-size:0.7rem;">18/25 classes</p>
+                  <div style="display:flex;gap:0.35rem;margin-top:0.25rem;">
+                    <button class="btn-secondary btn-sm" onclick="adjustAttendance('python', true, 1)">+ Attended</button>
+                    <button class="btn-secondary btn-sm" onclick="adjustAttendance('python', false, 1)">+ Missed</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Faculty Info Drawer -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Faculty Information</h3>
+              </div>
+              <div class="list-rows">
+                <div class="list-row">
+                  <div class="list-row-info">
+                    <h5>Prof. Sharma (Mathematics II)</h5>
+                    <p>Cabin B-206 • Office hours: Mon 3-4 PM</p>
+                    <p class="text-muted" style="font-size:0.7rem;">Email: sharma.math@university.edu</p>
+                  </div>
+                  <button class="btn-secondary btn-sm" onclick="showToast('Mail client shortcut: sharma.math@university.edu')">✉️ Contact</button>
+                </div>
+                <div class="list-row">
+                  <div class="list-row-info">
+                    <h5>Prof. Mehta (DBMS)</h5>
+                    <p>Cabin B-212 • Office hours: Tue 11 AM-12 PM</p>
+                    <p class="text-muted" style="font-size:0.7rem;">Email: mehta.dbms@university.edu</p>
+                  </div>
+                  <button class="btn-secondary btn-sm" onclick="showToast('Mail client shortcut: mehta.dbms@university.edu')">✉️ Contact</button>
+                </div>
+                <div class="list-row">
+                  <div class="list-row-info">
+                    <h5>Prof. Rao (Python Lab)</h5>
+                    <p>Cabin C-107 • Office hours: Wed 4-5 PM</p>
+                    <p class="text-muted" style="font-size:0.7rem;">Email: rao.python@university.edu</p>
+                  </div>
+                  <button class="btn-secondary btn-sm" onclick="showToast('Mail client shortcut: rao.python@university.edu')">✉️ Contact</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: TASKS
+        =========================================== -->
+        <section id="tasks" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1.15fr 0.85fr;">
+            <!-- Assignments List -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Academic Assignments</h3>
+                <button class="btn-primary btn-sm" onclick="openAddAssignmentModal()">+ Log Assignment</button>
+              </div>
+              
+              <div class="list-rows" id="assignment-list">
+                <!-- Renders dynamically -->
+              </div>
+            </div>
+
+            <!-- Exam Tracker List -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Upcoming Exam Calendar</h3>
+              </div>
+              
+              <div class="list-rows" id="exam-list">
+                <!-- Renders dynamically -->
+              </div>
+              
+              <div class="glass-card" style="margin-top:1.25rem; background:rgba(139, 92, 246, 0.03); border-color: rgba(139,92,246,0.15)">
+                <h5 style="margin-bottom:0.25rem;">Study Priority Alert</h5>
+                <p style="font-size:0.75rem; color:var(--text-muted); line-height: 1.4;">Based on exam dates, focus on Normalization and SQL Joins first (DBMS Midterm is in 12 days).</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: GRADE CALCULATOR
+        =========================================== -->
+        <section id="grades" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1.15fr 0.85fr;">
+            <!-- Calculator input card -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Grade Predictor & Target Simulator</h3>
+              </div>
+              <p class="text-muted" style="font-size:0.8rem; margin-bottom: 1.25rem;">Enter details for a chosen subject to see weightages (Mid-sem = 25%, Assignments = 15%, Attendance = 10%, End-sem = 50%):</p>
+              
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                <div class="form-group">
+                  <label for="calc-mid">Mid-Semester Marks (%)</label>
+                  <input type="number" id="calc-mid" class="form-control" placeholder="e.g. 78" value="75" oninput="calculateGPA()">
+                </div>
+                <div class="form-group">
+                  <label for="calc-assign">Assignments Score (%)</label>
+                  <input type="number" id="calc-assign" class="form-control" placeholder="e.g. 90" value="85" oninput="calculateGPA()">
+                </div>
+                <div class="form-group">
+                  <label for="calc-att">Attendance Factor (%)</label>
+                  <input type="number" id="calc-att" class="form-control" placeholder="e.g. 95" value="90" oninput="calculateGPA()">
+                </div>
+                <div class="form-group">
+                  <label for="calc-end">End-Semester Expected (%)</label>
+                  <input type="number" id="calc-end" class="form-control" placeholder="e.g. 80" value="80" oninput="calculateGPA()">
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 0.5rem;">
+                <label for="calc-target-cgpa">Target Grade Point (for CGPA)</label>
+                <input type="range" id="calc-target-cgpa" min="5" max="10" step="0.1" value="8.5" style="width:100%;accent-color:var(--accent-purple);" oninput="document.getElementById('target-cgpa-lbl').textContent = this.value; calculateGPA();">
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">
+                  <span>5.0 (C)</span>
+                  <span>Target: <b id="target-cgpa-lbl" style="color:var(--accent-purple)">8.5</b></span>
+                  <span>10.0 (O)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grade Outputs -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Calculation Results</h3>
+              </div>
+              <div class="glass-card" id="calc-results" style="background:rgba(255,255,255,0.02); margin-bottom:1rem; padding: 1rem; text-align:center;">
+                <!-- Output inserts here -->
+              </div>
+              
+              <div class="card-title-bar">
+                <h3>End-Sem Marks Target</h3>
+              </div>
+              <p id="calc-target-info" style="font-size:0.8rem; line-height: 1.4; color:var(--text-muted);">
+                <!-- Analysis info inserts here -->
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: LAUNDRY HUB
+        =========================================== -->
+        <section id="laundry" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1.25fr 0.75fr;">
+            <!-- Laundry Tracker -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Laundry Order Cycle</h3>
+                <button id="btn-simulate-laundry" class="btn-secondary btn-sm" onclick="simulateLaundryStep()">Advance Cycle Status</button>
+              </div>
+              
+              <!-- Progress Path -->
+              <div class="laundry-path">
+                <div class="laundry-line">
+                  <div id="laundry-line-fill" class="laundry-line-progress"></div>
+                </div>
+                
+                <div id="step-submitted" class="laundry-step">
+                  <div class="laundry-step-node">1</div>
+                  <span class="laundry-step-label">Submitted</span>
+                </div>
+                
+                <div id="step-washing" class="laundry-step">
+                  <div class="laundry-step-node">2</div>
+                  <span class="laundry-step-label">Washing</span>
+                </div>
+                
+                <div id="step-drying" class="laundry-step">
+                  <div class="laundry-step-node">3</div>
+                  <span class="laundry-step-label">Drying</span>
+                </div>
+                
+                <div id="step-ready" class="laundry-step">
+                  <div class="laundry-step-node">4</div>
+                  <span class="laundry-step-label">Ready</span>
+                </div>
+              </div>
+
+              <div class="glass-card" id="laundry-active-details" style="background: rgba(255,255,255,0.02); margin-top:1.5rem; padding:1rem;">
+                <!-- active details render dynamically -->
+              </div>
+              
+              <!-- Booking Form -->
+              <div style="margin-top: 1.5rem;">
+                <h4 style="font-size:1rem; margin-bottom: 0.75rem;">Check-in New Laundry Bag</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:0.5rem; align-items:flex-end;">
+                  <div class="form-group" style="margin-bottom:0">
+                    <label for="laundry-weight-input">Approx Weight (kg)</label>
+                    <input type="number" id="laundry-weight-input" class="form-control" placeholder="e.g. 5.2" step="0.1">
+                  </div>
+                  <div class="form-group" style="margin-bottom:0">
+                    <label for="laundry-items-input">Item Count</label>
+                    <input type="number" id="laundry-items-input" class="form-control" placeholder="e.g. 15">
+                  </div>
+                  <div class="form-group" style="margin-bottom:0">
+                    <label for="laundry-slot-input">Drop-off Day Slot</label>
+                    <select id="laundry-slot-input" class="form-control">
+                      <option value="Mon 09:00 AM">Monday Slot</option>
+                      <option value="Tue 09:00 AM">Tuesday Slot</option>
+                      <option value="Thu 09:00 AM">Thursday Slot</option>
+                      <option value="Fri 09:00 AM">Friday Slot</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex; gap:0.75rem; margin-top: 1rem;">
+                  <button class="btn-primary" onclick="bookLaundry()">Book Drop-off</button>
+                  <button id="btn-laundry-reminder" class="btn-secondary" onclick="toggleLaundryReminder()">Set Laundry Notification</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Schedule info and history -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Hostel Dropping Schedule</h3>
+              </div>
+              <p class="text-muted" style="font-size:0.75rem; line-height: 1.4; margin-bottom: 0.75rem;">Residents have specific laundry days based on hostel floor layout:</p>
+              <div class="list-rows" style="font-size: 0.8rem; margin-bottom: 1.25rem;">
+                <div class="list-row"><span>Hostel H-3 Floor 1 & 2</span><b>Mon / Thu</b></div>
+                <div class="list-row"><span>Hostel H-3 Floor 3 & 4</span><b>Tue / Fri</b></div>
+                <div class="list-row"><span>Off Days / Maintenance</span><b>Wed / Sun</b></div>
+              </div>
+
+              <div class="card-title-bar">
+                <h3>Laundry Logs History</h3>
+              </div>
+              <div class="list-rows" id="laundry-history-list">
+                <!-- Renders dynamically -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: PRINTING
+        =========================================== -->
+        <section id="printing" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1.1fr 0.9fr;">
+            <!-- Printing uploader and options -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Submit Print Job</h3>
+              </div>
+              
+              <!-- Drag and drop zone -->
+              <div class="upload-area" id="print-dropzone">
+                <span class="upload-icon">📤</span>
+                <p>Drag and drop files here, or click to browse</p>
+                <span class="text-muted" style="font-size:0.7rem;">Supported files: PDF, DOCX, PPTX (Max 25MB)</span>
+                <input type="file" id="print-file-input" style="display: none;">
+              </div>
+              
+              <div class="progress-bar-container" id="print-progress-container">
+                <div class="progress-bar-fill" id="print-progress-fill"></div>
+              </div>
+
+              <!-- Options -->
+              <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:0.5rem; margin-top: 1rem;">
+                <div class="form-group">
+                  <label for="print-color-select">Color Scheme</label>
+                  <select id="print-color-select" class="form-control">
+                    <option value="Grayscale">Grayscale (₹2/pg)</option>
+                    <option value="Color">Color (₹10/pg)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="print-side-select">Double Sided</label>
+                  <select id="print-side-select" class="form-control">
+                    <option value="double">Double-sided (Duplex)</option>
+                    <option value="single">Single-sided</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="print-copies-input">Copies Count</label>
+                  <input type="number" id="print-copies-input" class="form-control" value="1" min="1">
+                </div>
+              </div>
+            </div>
+
+            <!-- Print Queue Queue -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Print Shop Queued Jobs</h3>
+                <button class="btn-secondary btn-sm" onclick="simulatePrinting()">Simulate Print Action</button>
+              </div>
+              
+              <div class="print-queue-list" id="print-queue">
+                <!-- Renders dynamically -->
+              </div>
+              
+              <div class="glass-card" style="margin-top: 1.5rem; background:rgba(16, 185, 129, 0.03); border-color: rgba(16,185,129,0.15)">
+                <h5 style="color:var(--accent-green); font-size:0.8rem; margin-bottom: 0.2rem;">Unisphere Print Terminal</h5>
+                <p style="font-size:0.7rem; color:var(--text-muted); line-height: 1.4;">Printers are located in Unisphere block basement and Hostel H-3 lounge. Scan the QR code at the terminal to release submitted files.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: HOSTEL
+        =========================================== -->
+        <section id="hostel" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1.1fr 0.9fr;">
+            <!-- Lodge complaint form -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Lodge Room Maintenance Complaint</h3>
+              </div>
+              
+              <div class="form-group">
+                <label for="complaint-category">Maintenance Type</label>
+                <select id="complaint-category" class="form-control">
+                  <option value="Electrical">Electrical (Fan, light, switches)</option>
+                  <option value="Plumbing">Plumbing (Tap leakage, bathroom flush)</option>
+                  <option value="Carpentry">Carpentry (Bed joint, door handle, cupboard)</option>
+                  <option value="Housekeeping">Housekeeping (Room sweeping, waste disposal)</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="complaint-desc">Details of the issue</label>
+                <textarea id="complaint-desc" class="form-control" rows="4" placeholder="Describe the issue and specify room coordinates..."></textarea>
+              </div>
+
+              <div style="display:flex; gap:0.5rem;">
+                <button class="btn-primary" onclick="lodgeComplaint()">Submit Request</button>
+                <button class="btn-secondary" onclick="showToast('Photo uploaded simulator completed.')">📷 Attach Photo</button>
+              </div>
+            </div>
+
+            <!-- Active complaints tracker -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Complaints Status</h3>
+                <button class="btn-secondary btn-sm" onclick="simulateComplaintStatus()">Progress Status</button>
+              </div>
+              
+              <div class="complaint-list" id="maintenance-list">
+                <!-- Renders dynamically -->
+              </div>
+
+              <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; font-size: 0.8rem;">
+                <h5 style="margin-bottom:0.5rem;">Hostel Information</h5>
+                <p>🏨 <b>Residence:</b> Block H-3, Room 304</p>
+                <p>👨‍💼 <b>Warden:</b> Mr. Rajesh Verma (Office Floor 1)</p>
+                <p>📞 <b>Warden Contact:</b> +91 98765 43210</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: CLUBS
+        =========================================== -->
+        <section id="clubs" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+            <!-- Club Memberships -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Student Club Societies</h3>
+              </div>
+              
+              <h5 style="margin-bottom: 0.5rem; font-size: 0.85rem;">My Active Societies</h5>
+              <div class="list-rows" id="joined-clubs" style="margin-bottom: 1.25rem;">
+                <!-- Rendered dynamically -->
+              </div>
+
+              <h5 style="margin-bottom: 0.5rem; font-size: 0.85rem;">Explore Other Clubs</h5>
+              <div class="list-rows" id="available-clubs">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+
+            <!-- Facility Booking -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Book Campus Sports Facility</h3>
+              </div>
+              
+              <div class="form-group">
+                <label for="sports-facility-select">Facility Name</label>
+                <select id="sports-facility-select" class="form-control">
+                  <option value="Badminton Court 1">Badminton Court 1 (Indoor)</option>
+                  <option value="Badminton Court 2">Badminton Court 2 (Indoor)</option>
+                  <option value="Squash Court A">Squash Court A (Sports Block)</option>
+                  <option value="Tennis Court 2">Tennis Court 2 (Outdoor)</option>
+                  <option value="Gym Training Slot">Main Gym Strength Area Slot</option>
+                </select>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="form-group">
+                  <label for="sports-time-select">Time Slot</label>
+                  <select id="sports-time-select" class="form-control">
+                    <option value="04:00 PM - 05:00 PM">04:00 PM - 05:00 PM</option>
+                    <option value="05:00 PM - 06:00 PM">05:00 PM - 06:00 PM</option>
+                    <option value="06:00 PM - 07:00 PM">06:00 PM - 07:00 PM</option>
+                    <option value="07:00 PM - 08:00 PM">07:00 PM - 08:00 PM</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="sports-date-select">Booking Date</label>
+                  <input type="date" id="sports-date-select" class="form-control" value="2026-08-22">
+                </div>
+              </div>
+
+              <button class="btn-primary" style="width: 100%; margin-bottom: 1.25rem;" onclick="bookFacility()">Book Slot</button>
+
+              <h5 style="margin-bottom: 0.5rem; font-size: 0.85rem;">My Facility Bookings</h5>
+              <div class="list-rows" id="bookings-list">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: AI STUDY TOOL
+        =========================================== -->
+        <section id="study" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1fr 1.2fr;">
+            <!-- Document Uploader -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Study Material Analyzer</h3>
+              </div>
+              <p class="text-muted" style="font-size:0.8rem; margin-bottom: 1rem;">Upload syllabus, previous year papers, or course slides to let the AI analyze and suggest resources.</p>
+              
+              <div class="upload-area" id="study-dropzone" style="border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.02)">
+                <span class="upload-icon" style="color:var(--accent-blue)">📖</span>
+                <p>Drop syllabus or paper PDF here</p>
+                <span class="text-muted" style="font-size:0.7rem;">Supported: PDF, EPUB, TXT</span>
+                <input type="file" id="study-file-input" style="display:none;">
+              </div>
+
+              <div id="study-analysis-loader" style="display:none; text-align:center; padding:1.5rem;">
+                <div class="splash-loading-bar" style="margin: 0 auto 0.75rem; width:150px;"><div class="splash-loading-progress" style="animation-duration: 2s;"></div></div>
+                <p style="font-size:0.8rem;color:var(--text-muted);">AI is parsing material structures and generating reference items...</p>
+              </div>
+
+              <div class="glass-card" style="margin-top: 1.25rem;">
+                <div class="card-title-bar">
+                  <h3>Ask AI Study Assistant</h3>
+                </div>
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                  <input type="text" id="study-chat-input" class="form-control" placeholder="Ask questions about normalization, matrices, etc..." onkeydown="if(event.key==='Enter')askStudyQuestion()">
+                </div>
+                <button class="btn-primary btn-sm" onclick="askStudyQuestion()">Ask Concept</button>
+                
+                <div id="study-chat-response" class="glass-card" style="display:none; background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.05); margin-top: 0.75rem; padding: 0.75rem;">
+                  <!-- Answer inserts here -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Analysis results -->
+            <div class="glass-card" id="study-analysis-results" style="display: none;">
+              <div class="card-title-bar">
+                <div>
+                  <h3 id="study-doc-title">dbms_prev_year_2025.pdf</h3>
+                  <p class="text-muted" id="study-doc-sub" style="font-size:0.75rem;"></p>
+                </div>
+              </div>
+
+              <div class="glass-card" style="background:rgba(255,255,255,0.01); margin-bottom: 1rem; padding: 0.75rem;">
+                <h5 style="margin-bottom:0.25rem; font-size:0.85rem;">Document Executive Summary</h5>
+                <p id="study-summary-text" style="font-size:0.8rem; color:var(--text-muted); line-height: 1.4;"></p>
+              </div>
+
+              <h5 style="margin-bottom: 0.5rem; font-size: 0.85rem;">Interactive Practice Questions</h5>
+              <div class="list-rows" id="study-quiz-list" style="margin-bottom:1rem;">
+                <!-- render quizzes -->
+              </div>
+
+              <h5 style="margin-bottom: 0.5rem; font-size: 0.85rem;">Suggested Library Reference Books</h5>
+              <ul id="study-book-recommendations" style="color: var(--text-muted)">
+                <!-- render recommended books -->
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==========================================
+             PAGE PANEL: HELP & SUPPORT
+        =========================================== -->
+        <section id="help" class="page-panel">
+          <div class="card-grid" style="grid-template-columns: 1.1fr 0.9fr;">
+            <!-- FAQ Accordions -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Campus FAQ Guidelines</h3>
+              </div>
+              <div class="list-rows">
+                <div class="list-row" style="flex-direction:column; align-items:flex-start; cursor:pointer;" onclick="showToast('Rules: Standard floor dropoff slots are active. Check schedule.')">
+                  <h5>How is laundry weight validated?</h5>
+                  <p class="text-muted" style="font-size:0.75rem; margin-top:0.25rem;">Warden logs checks. Maximum weight per floor drop is 7 kg.</p>
+                </div>
+                <div class="list-row" style="flex-direction:column; align-items:flex-start; cursor:pointer;" onclick="showToast('Rules: Timetable overlaps must be resolved with Dean academics.')">
+                  <h5>How do I resolve timetable overlaps?</h5>
+                  <p class="text-muted" style="font-size:0.75rem; margin-top:0.25rem;">Log a ticket here or visit academic block B-102.</p>
+                </div>
+                <div class="list-row" style="flex-direction:column; align-items:flex-start; cursor:pointer;" onclick="showToast('Rules: Releases from queue stay active for 24 hours.')">
+                  <h5>How long do printable jobs stay queued?</h5>
+                  <p class="text-muted" style="font-size:0.75rem; margin-top:0.25rem;">Jobs are purged from Unisphere cloud print spoolers after 24 hours.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Helpline Desk -->
+            <div class="glass-card">
+              <div class="card-title-bar">
+                <h3>Emergency Helpline Directory</h3>
+              </div>
+              <div class="list-rows" style="font-size:0.85rem;">
+                <div class="list-row"><span>🏥 Campus Health Center</span><b>Ext: 4002</b></div>
+                <div class="list-row"><span>🛡️ Main Security Gate Post</span><b>+91 124 555 9011</b></div>
+                <div class="list-row"><span>🚌 Transport Coordinator Desk</span><b>Ext: 1042</b></div>
+                <div class="list-row"><span>🍔 Central Mess Management Office</span><b>Ext: 2011</b></div>
+              </div>
+              
+              <div style="margin-top:1.5rem;">
+                <button class="btn-primary" style="width:100%;" onclick="showToast('Support ticket raised. Team will review.')">Raise Support Ticket</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ===================================================
+       3. FLOATING AI ASSISTANT (CORNERS BUTTON)
+  =================================================== -->
+  <div class="ai-assistant-wrapper">
+    <div class="ai-floating-circle" onclick="toggleAIChat()">🤖</div>
+    
+    <div class="ai-chat-panel" id="ai-chat-panel">
+      <div class="ai-chat-header">
+        <div class="ai-header-info">
+          <div class="ai-header-status"></div>
+          <h4 style="font-size: 0.9rem; font-family: var(--font-title); font-weight:700;">UniSphere AI Assistant</h4>
+        </div>
+        <button style="background:none; border:0; color:var(--text-muted); cursor:pointer; font-size: 1rem;" onclick="toggleAIChat()">✕</button>
+      </div>
+      
+      <!-- Messages List -->
+      <div class="ai-chat-messages" id="ai-chat-messages">
+        <div class="chat-bubble bot">
+          Hello Aarav! I'm UniBot. Ask me anything about your academic records, laundry status, hostel maintenance or print files.
+        </div>
+      </div>
+      
+      <!-- Suggestion Pill Bar -->
+      <div class="ai-chat-suggestions">
+        <span class="suggestion-pill" onclick="quickQuery('Check attendance')">📚 Attendance Summary</span>
+        <span class="suggestion-pill" onclick="quickQuery('What classes do I have?')">📅 Today's Timetable</span>
+        <span class="suggestion-pill" onclick="quickQuery('Laundry Status')">🧺 Laundry Tracker</span>
+        <span class="suggestion-pill" onclick="quickQuery('Printers status')">🖨️ Printing Queue</span>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="ai-chat-input-bar">
+        <input type="text" id="ai-chat-input" class="form-control" style="border-radius:12px;" placeholder="Type campus query..." onkeydown="if(event.key==='Enter')sendAIMessage()">
+        <button class="btn-primary btn-sm" style="border-radius:12px; padding: 0.5rem 1rem;" onclick="sendAIMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       4. MODALS & POP-UPS
+  =================================================== -->
+  
+  <!-- Add Assignment Modal -->
+  <div class="modal-overlay" id="assignment-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Log Academic Assignment</h3>
+        <button class="modal-close" onclick="closeAssignmentModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="task-title-input">Assignment/Project Title *</label>
+          <input type="text" id="task-title-input" class="form-control" placeholder="e.g. DBMS Normalization assignment">
+        </div>
+        <div class="form-group">
+          <label for="task-subject-input">Course Subject</label>
+          <select id="task-subject-input" class="form-control">
+            <option value="DBMS">DBMS</option>
+            <option value="Mathematics II">Mathematics II</option>
+            <option value="Python">Python Programming</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="task-date-input">Due Date *</label>
+          <input type="date" id="task-date-input" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="task-priority-input">Priority</label>
+          <select id="task-priority-input" class="form-control">
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeAssignmentModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveAssignment()">Save Assignment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Event Modal -->
+  <div class="modal-overlay" id="event-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Log Calendar Event</h3>
+        <button class="modal-close" onclick="closeEventModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="event-title-input">Event / Milestone Title *</label>
+          <input type="text" id="event-title-input" class="form-control" placeholder="e.g. Hackathon Registration Closes">
+        </div>
+        <div class="form-group">
+          <label for="event-date-input">Event Date *</label>
+          <input type="date" id="event-date-input" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="event-type-input">Event Category</label>
+          <select id="event-type-input" class="form-control">
+            <option value="event">General Event</option>
+            <option value="due">Assignment Deadline</option>
+            <option value="exam">Examination Milestone</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeEventModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveCalendarEvent()">Log Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification element -->
+  <div class="toast-notice" id="toast-notice"></div>
+
+  <!-- Script tags -->
+  <script src="app.js"></script>
+</body>
+</html>
